@@ -10,7 +10,7 @@ from datetime import datetime as dt
 
 from pandastim.textures import TextureBase
 
-from pandastim.experiments.Matt_Exp import LocalSub, LocalMonitor, ClosedLoopStimuli, \
+from pandastim.experiments.Minel_Exp import LocalSub, LocalMonitor, ClosedLoopStimuli, \
     port_provider, stytra_container,  center_finder, pos_receiver, RadialSinCube, calibration_stimulus_wrapper, calibration_fxn
 
 
