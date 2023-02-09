@@ -25,10 +25,10 @@ bout_duration_upperthreshold = 1
 
 # Eliminate fish with average bout count per min lower than 10 (control for non-moving fish)
 # and higher than 120 (control for tracking issues)
-bout_count_lowerthreshold = 10
+bout_count_lowerthreshold = 5
 bout_count_upperthreshold = 120
 
-treatment_duration = 600 # The duration of drug treatment (in sec)
+treatment_duration = 0 # The duration of drug treatment (in sec)
 bin_duration = 60 # The duration of each bin for analysis (in sec)
 omr_bin_angle = 3 # The bin width for bout angle histograms (in degrees)
 bout_duration_bin = 0.02 # The duration of each bin for bout duration histograms (in sec)
@@ -353,7 +353,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         rects7 = ax.bar(x + width / 2, above_drug_habit, width, color='black', bottom=below_drug_habit)
         rects8 = ax.bar(x + 1.5 * width, above_drug_loco, width, color='black', bottom=below_drug_loco)'''
 
-def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
+def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
     # Plot line graph of measure over time per fish
     # Level can be 'exp' or 'conc'
     # Measure can be 'distance' or 'dist_from_center'
@@ -407,6 +407,68 @@ def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
              horizontalalignment='center', rotation='vertical', fontsize='xx-large', color='navy')
     # plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
                 # alpha=0.2)
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+    if level == 'exp':
+        plt.title(folder[folder.rfind('\\') + 1:], fontsize='x-large', pad=10)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + save_name), dpi=300, transparent=False)
+    elif level == 'conc':
+        plt.title(DOI_conc, fontsize='x-large', pad=10)
+        plt.savefig(os.path.join(folder, DOI_conc + save_name), dpi=300, transparent=False)
+    else:
+        print('Cannot save figure, level should be "exp" or "conc"')
+    return
+    
+def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
+    # Plot line graph of measure over time per fish
+    # Level can be 'exp' or 'conc'
+    # Measure can be 'distance' or 'dist_from_center'
+
+    measures = ['distance', 'dist_from_center']
+    if measure not in measures:
+        print('Measure not available. Accepted measures are: ', measures)
+        return
+
+    labels = list(boutdf.fish_id.unique())
+    labels.sort()
+    fig, ax = plt.subplots(figsize=(20, 5))
+
+    baseline_duration = np.sum([boutdf[(boutdf.condition == 'baseline') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+                                for _stim in boutdf[boutdf.condition == 'baseline'].stim_index.unique()])
+    drugtreated_duration = np.sum([boutdf[(boutdf.condition == 'drugtreated') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+                                for _stim in boutdf[boutdf.condition == 'drugtreated'].stim_index.unique()])
+    total_duration = baseline_duration + treatment_duration + drugtreated_duration
+
+    timebins = np.arange(0, total_duration + bin_duration + 1, bin_duration)
+
+    maxval = 0
+    for fish in labels:
+        iddf = boutdf[boutdf['fish_id'] == fish]
+        if measure == 'distance':
+            bin_vals = np.nan_to_num([iddf[iddf['timebin_ind'] == i].distance.sum() for i in range(1, len(timebins))])
+        elif measure == 'dist_from_center':
+            bin_vals = np.nan_to_num([iddf[(iddf['timebin_ind'] == i) & (iddf.bout.notna())].dist_from_center.mean() for i in range(1, len(timebins))])
+        if max(bin_vals) > maxval:
+            maxval = max(bin_vals)
+
+        # get the last timebin_ind of baseline and first timebin_ind of drugtreated to determine masked regions
+        mask_start = np.digitize(baseline_duration, timebins)-1
+        mask_end = np.digitize(baseline_duration+treatment_duration, timebins)-1
+        masked_vals = np.ma.array(bin_vals)
+        masked_vals[mask_start:mask_end] = np.ma.masked
+        plt.plot(timebins[1:], masked_vals, label=f'Fish {fish}')
+
+        plt.axvline(x=baseline_duration, color='b', ls= '--')
+
+    if measure == 'distance':
+        ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
+        save_name = '_distovertime_perfish.png'
+    elif measure == 'dist_from_center':
+        ax.set_ylabel('Average Distance from Center (px)', fontsize='x-large')
+        save_name = '_distfromcenterovertime_perfish.png'
+
+    ax.set_xlabel('Time (s)', fontsize='x-large')
+
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     if level == 'exp':

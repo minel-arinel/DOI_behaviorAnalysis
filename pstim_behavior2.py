@@ -351,7 +351,7 @@ def main(parent_folder, rerun=False):
         last_t = (stimuli[-1:].t + stimuli[-1:].duration - stimuli[-1:].stat_time).values[0] # minel - added the final t of experiment
 
         behave_df = pd.read_csv(behavior_path,  sep=';', dtype=np.float32)
-
+        
         # iterate through starts/stops to label stims
         for i in range(len(s)):
             try:
