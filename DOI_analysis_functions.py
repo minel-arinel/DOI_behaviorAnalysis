@@ -291,18 +291,65 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     ax.set_xlabel('Fish ID', fontsize='x-large')
 
     good_fish = []
+    inactive_fish = []
+    treatment_lst = list(df.head().index) # list of all the treatments (habituation, left, right, etc.)
+    index = 0
+    """
+    criteria for good_fish:
+        - neither baseline nor drugtreated should cross upper bound -----DONE-----
+        - baseline habituation, baseline forward, and either baseline left or right over lower bound
+        
+    criteria for inactive_fish:
+        - neither baseline nor drugtreated should cross upper bound
+        - fails baseline criteria for good_fish
+    """
+    notBadFish = true # will be 1 for good fish, 0 for inactive fish, and -1 for bad fish
 
     for i, _id in enumerate(fish_ids):
-        vals = [] # bar values for a single fish
         for _cond in df[_id].columns:
-            vals.extend(df[_id][_cond].values)
-            if _cond == 'baseline' and df.measure == 'boutcount':
+            values = df[_id][_cond].values()
+            if _cond == 'baseline' and df.measure == 'boutcount': #added the check for drugtreated as well
                 cnts = []
-                for _ in df[_id][_cond].values:
+                for val in values:
+                    if val <= bout_count_upperthreshold:
+                        notBadFish = false
+                        break
+                if not notBadFish:
+                    break
+
+                #
+                #
+                #
+                #
+                #     cnts.append(True) if _ <= bout_count_upperthreshold else cnts.append(False)
+                #     if index == 0: #habituation
+                #
+                # if False in cnts:
+                #     isGoodFish = -1
+                #     # if _ <= bout_count_upperthreshold:
+                #
+                #
+                #
+                #
+                #
+                #
+                #
+
+
+
                     cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(False)
                 if all(cnts):
                     # if all baseline bout counts are within the upper and lower bounds, add to good_fish
                     good_fish.append(_id)
+            # TODO: remove the upper bound if over (keep lower)
+            # TODO: keep habituation forward and right or left (lower bound)
+            if _cond == 'drugtreated' and df.measure == 'boutcount': #added the check for drugtreated as well
+                cnts = []
+                for _ in df[_id][_cond].values:
+                    cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(False)
+                if False in cnts and _id in good_fish:
+                    # if all baseline bout counts are within the upper and lower bounds, add to good_fish
+                    good_fish.remove(_id)
 
         for j, val in enumerate(vals):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j) # x coordinates of individual bars for fish
