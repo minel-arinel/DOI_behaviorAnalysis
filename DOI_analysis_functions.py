@@ -14,9 +14,9 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from random import choice
 
-roi = (1216, 1216) # roi of camera
-x0 = roi[0]/2 # x-coord of the center
-y0 = roi[1]/2 # y-coord of the center
+roi = (1216, 1216)  # roi of camera
+x0 = roi[0] / 2  # x-coord of the center
+y0 = roi[1] / 2  # y-coord of the center
 radius = min(x0, y0) / np.sqrt(2)
 
 # Eliminate bouts with durations shorter than 100 ms and longer than 1 second (control for tracking issues)
@@ -28,12 +28,13 @@ bout_duration_upperthreshold = 1
 bout_count_lowerthreshold = 5
 bout_count_upperthreshold = 120
 
-treatment_duration = 0 # The duration of drug treatment (in sec)
-bin_duration = 60 # The duration of each bin for analysis (in sec)
-omr_bin_angle = 3 # The bin width for bout angle histograms (in degrees)
-bout_duration_bin = 0.02 # The duration of each bin for bout duration histograms (in sec)
+treatment_duration = 0  # The duration of drug treatment (in sec)
+bin_duration = 60  # The duration of each bin for analysis (in sec)
+omr_bin_angle = 3  # The bin width for bout angle histograms (in degrees)
+bout_duration_bin = 0.02  # The duration of each bin for bout duration histograms (in sec)
 
 conditions = ['baseline', 'drugtreated']
+
 
 def create_newdf(parent_folder):
     dfs = []
@@ -57,8 +58,8 @@ def create_newdf(parent_folder):
     print("Experiment dataframe is saved")
     return
 
-def create_newboutdf(parent_folder):
 
+def create_newboutdf(parent_folder):
     df_path = os.path.join(parent_folder, parent_folder[parent_folder.rfind('\\') + 1:] + '_finaldf.h5')
     df = pd.read_hdf(df_path)
 
@@ -80,8 +81,8 @@ def create_newboutdf(parent_folder):
     dist_from_centers = []
     in_centers = []
 
-    conc = parent_folder[parent_folder.rfind('DOI')+4 : parent_folder.rfind('ugml')+4]
-    age = int(parent_folder[:parent_folder.rfind('dpf')][parent_folder[:parent_folder.rfind('dpf')].rfind('_')+1:])
+    conc = parent_folder[parent_folder.rfind('DOI') + 4: parent_folder.rfind('ugml') + 4]
+    age = int(parent_folder[:parent_folder.rfind('dpf')][parent_folder[:parent_folder.rfind('dpf')].rfind('_') + 1:])
 
     # durations calculated by the sum of each stim's duration
     baseline_duration = np.sum(
@@ -113,7 +114,8 @@ def create_newboutdf(parent_folder):
                         last_ind = min(last_indx, last_indy)
                         sub = _bout_data.loc[:last_ind]
                         bout_duration = sub.stim_time.values[-1] - sub.stim_time.values[0]
-                        bout_angle = (sub.f0_theta.values[-1] - sub.f0_theta.values[0]) * 180 / np.pi # minel - changed this from cum_theta to f0_theta because cum_theta was the cumulative of f0_vtheta
+                        bout_angle = (sub.f0_theta.values[-1] - sub.f0_theta.values[
+                            0]) * 180 / np.pi  # minel - changed this from cum_theta to f0_theta because cum_theta was the cumulative of f0_vtheta
                         if len(sub) >= 5 and bout_duration_lowerthreshold <= bout_duration <= bout_duration_upperthreshold and -180 <= bout_angle <= 180:
                             ts = sub.stim_time.values
                             bout_starts.append(ts[0])
@@ -175,7 +177,8 @@ def create_newboutdf(parent_folder):
                            'condition': conds, 'stim_name': stim_names, 'stim_index': stim_indices, 'bout': bout_labels,
                            'distance': dsts, 'dist_from_center': dist_from_centers, 'in_center': in_centers,
                            'bout_angle': thetas, 'bout_duration': bout_durations, 'bout_start': bout_starts,
-                           'cum_bout_start': cum_bout_starts, 'timebin_ind': timebin_inds, 'stim_duration': stim_durations,
+                           'cum_bout_start': cum_bout_starts, 'timebin_ind': timebin_inds,
+                           'stim_duration': stim_durations,
                            'stat_time': stat_times})
 
     boutdf.in_center = boutdf.in_center.astype(bool)
@@ -190,8 +193,9 @@ def create_newboutdf(parent_folder):
     print("Bout dataframe is saved")
     return
 
+
 def create_concdf(data_folder, DOI_conc, good_fish):
-# Update combined dfs
+    # Update combined dfs
 
     good_dfs = []
     good_boutdfs = []
@@ -209,14 +213,17 @@ def create_concdf(data_folder, DOI_conc, good_fish):
 
     good_df = pd.concat([pd.read_hdf(df) for df in good_dfs], ignore_index=True)
     good_df = good_df[good_df.fish_id.isin(good_fish)]
-    good_df.to_hdf(os.path.join(data_folder, f'{DOI_conc}_DOI_selected_finaldf.h5'), 'finaldf', format='table', mode='w')
+    good_df.to_hdf(os.path.join(data_folder, f'{DOI_conc}_DOI_selected_finaldf.h5'), 'finaldf', format='table',
+                   mode='w')
     good_boutdf = pd.concat([pd.read_hdf(boutdf) for boutdf in good_boutdfs], ignore_index=True)
     good_boutdf = good_boutdf[good_boutdf.fish_id.isin(good_fish)]
-    good_boutdf.to_hdf(os.path.join(data_folder, f'{DOI_conc}_DOI_selected_finalboutdf.h5'), 'finalboutdf', format='table', mode='w')
+    good_boutdf.to_hdf(os.path.join(data_folder, f'{DOI_conc}_DOI_selected_finalboutdf.h5'), 'finalboutdf',
+                       format='table', mode='w')
     return
 
+
 def create_alldf(data_folder):
-# Combine selected fish boutdfs from different concentrations into one df
+    # Combine selected fish boutdfs from different concentrations into one df
 
     concdfs = []
     with os.scandir(data_folder) as entries:
@@ -227,6 +234,7 @@ def create_alldf(data_folder):
     concdf = pd.concat(concdfs, ignore_index=True)
     concdf.to_hdf(os.path.join(data_folder, 'alldf.h5'), 'alldf', format='table', mode='w')
     return
+
 
 def measurepertime(boutdf, measure, time):
     # Measure can be either 'distance', 'boutcount'
@@ -255,7 +263,8 @@ def measurepertime(boutdf, measure, time):
                 # only include the trials with bouts
                 subdf = boutdf[(boutdf.fish_id == _id) & (boutdf.condition == _cond) & (boutdf.stim_name == _stim) &
                                (boutdf.bout.notna())]
-                stim_duration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0] for s in subdf.stim_index.unique()])
+                stim_duration = np.sum(
+                    [subdf[subdf.stim_index == s].stim_duration.values[0] for s in subdf.stim_index.unique()])
                 if measure == 'distance':
                     val = np.nan_to_num(subdf.distance.sum() / stim_duration) * t
                 elif measure == 'boutcount':
@@ -263,9 +272,10 @@ def measurepertime(boutdf, measure, time):
                 _dict[_id][_cond][_stim] = val
 
     _df = pd.DataFrame.from_dict({(_id, _cond): _dict[_id][_cond]
-                                for _id in _dict.keys() for _cond in _dict[_id].keys()})
+                                  for _id in _dict.keys() for _cond in _dict[_id].keys()})
     _df.measure = measure
     return _df
+
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
@@ -278,12 +288,13 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         return
 
     fish_ids = list(df.columns.get_level_values(0).unique())
-    labels = [f'{_cond}; {_stim}' for _cond in df.columns.get_level_values(1).unique() for _stim in df.index] # labels of bars
-    num_bars = len(labels) # number of bars to plot per fish
+    labels = [f'{_cond}; {_stim}' for _cond in df.columns.get_level_values(1).unique() for _stim in
+              df.index]  # labels of bars
+    num_bars = len(labels)  # number of bars to plot per fish
 
     width = 0.35  # the width of the bars
-    stepsize = (num_bars + 3) * width # distance between the center of fish labels
-    x = np.arange(len(fish_ids)*stepsize, step=stepsize)  # the label locations
+    stepsize = (num_bars + 3) * width  # distance between the center of fish labels
+    x = np.arange(len(fish_ids) * stepsize, step=stepsize)  # the label locations
 
     fig, ax = plt.subplots(figsize=(num_bars * 3 / 2, 5))
     ax.set_xticks(x)
@@ -292,8 +303,6 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
 
     good_fish = []
     inactive_fish = []
-    treatment_lst = list(df.head().index) # list of all the treatments (habituation, left, right, etc.)
-    index = 0
     """
     criteria for good_fish:
         - neither baseline nor drugtreated should cross upper bound -----DONE-----
@@ -303,57 +312,48 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         - neither baseline nor drugtreated should cross upper bound
         - fails baseline criteria for good_fish
     """
-    notBadFish = true # will be 1 for good fish, 0 for inactive fish, and -1 for bad fish
+
 
     for i, _id in enumerate(fish_ids):
+        index = 0
+        checker = {
+            "below-upper": True,
+            "above-lower": True,
+            "right-left": True
+        }
         for _cond in df[_id].columns:
             values = df[_id][_cond].values()
-            if _cond == 'baseline' and df.measure == 'boutcount': #added the check for drugtreated as well
-                cnts = []
+            if _cond == 'baseline' and df.measure == 'boutcount':  # added the check for drugtreated as well
                 for val in values:
-                    if val <= bout_count_upperthreshold:
-                        notBadFish = false
-                        break
-                if not notBadFish:
-                    break
+                    if val >= bout_count_upperthreshold:
+                        checker["below-upper"] = False
+                    if index in [0, 1] and val <= bout_count_lowerthreshold:
+                        checker["above-lower"] = False
+                    elif index in [2, 3] and val <= bout_count_lowerthreshold:
+                        checker["right-left"] = False
+            if _cond == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
+                for val in values:
+                    if val >= bout_count_upperthreshold:
+                        checker["below-upper"] = False
+            val_lst = list(checker.values())
+            if all(val_lst):
+                good_fish.append(_id)
+            elif False in val_lst and val_lst[0] is not False:
+                inactive_fish.append(_id)
 
-                #
-                #
-                #
-                #
-                #     cnts.append(True) if _ <= bout_count_upperthreshold else cnts.append(False)
-                #     if index == 0: #habituation
-                #
-                # if False in cnts:
-                #     isGoodFish = -1
-                #     # if _ <= bout_count_upperthreshold:
-                #
-                #
-                #
-                #
-                #
-                #
-                #
-
-
-
-                    cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(False)
-                if all(cnts):
-                    # if all baseline bout counts are within the upper and lower bounds, add to good_fish
-                    good_fish.append(_id)
             # TODO: remove the upper bound if over (keep lower)
             # TODO: keep habituation forward and right or left (lower bound)
-            if _cond == 'drugtreated' and df.measure == 'boutcount': #added the check for drugtreated as well
                 cnts = []
                 for _ in df[_id][_cond].values:
-                    cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(False)
+                    cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(
+                        False)
                 if False in cnts and _id in good_fish:
                     # if all baseline bout counts are within the upper and lower bounds, add to good_fish
                     good_fish.remove(_id)
 
         for j, val in enumerate(vals):
-            _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j) # x coordinates of individual bars for fish
-            if i == 0: # only add labels for the first fish so that they are not repeated in the legend for every fish
+            _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
+            if i == 0:  # only add labels for the first fish so that they are not repeated in the legend for every fish
                 ax.bar(_x, vals[j], width, label=labels[j])
             else:
                 ax.bar(_x, vals[j], width)
@@ -400,6 +400,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         rects7 = ax.bar(x + width / 2, above_drug_habit, width, color='black', bottom=below_drug_habit)
         rects8 = ax.bar(x + 1.5 * width, above_drug_loco, width, color='black', bottom=below_drug_loco)'''
 
+
 def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
     # Plot line graph of measure over time per fish
     # Level can be 'exp' or 'conc'
@@ -414,10 +415,12 @@ def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
     labels.sort()
     fig, ax = plt.subplots(figsize=(20, 5))
 
-    baseline_duration = np.sum([boutdf[(boutdf.condition == 'baseline') & (boutdf.stim_index == _stim)].stim_duration.values[0]
-                                for _stim in boutdf[boutdf.condition == 'baseline'].stim_index.unique()])
-    drugtreated_duration = np.sum([boutdf[(boutdf.condition == 'drugtreated') & (boutdf.stim_index == _stim)].stim_duration.values[0]
-                                for _stim in boutdf[boutdf.condition == 'drugtreated'].stim_index.unique()])
+    baseline_duration = np.sum(
+        [boutdf[(boutdf.condition == 'baseline') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+         for _stim in boutdf[boutdf.condition == 'baseline'].stim_index.unique()])
+    drugtreated_duration = np.sum(
+        [boutdf[(boutdf.condition == 'drugtreated') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+         for _stim in boutdf[boutdf.condition == 'drugtreated'].stim_index.unique()])
     total_duration = baseline_duration + treatment_duration + drugtreated_duration
 
     timebins = np.arange(0, total_duration + bin_duration + 1, bin_duration)
@@ -428,13 +431,15 @@ def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
         if measure == 'distance':
             bin_vals = np.nan_to_num([iddf[iddf['timebin_ind'] == i].distance.sum() for i in range(1, len(timebins))])
         elif measure == 'dist_from_center':
-            bin_vals = np.nan_to_num([iddf[(iddf['timebin_ind'] == i) & (iddf.bout.notna())].dist_from_center.mean() for i in range(1, len(timebins))])
+            bin_vals = np.nan_to_num(
+                [iddf[(iddf['timebin_ind'] == i) & (iddf.bout.notna())].dist_from_center.mean() for i in
+                 range(1, len(timebins))])
         if max(bin_vals) > maxval:
             maxval = max(bin_vals)
 
         # get the last timebin_ind of baseline and first timebin_ind of drugtreated to determine masked regions
-        mask_start = np.digitize(baseline_duration, timebins)-1
-        mask_end = np.digitize(baseline_duration+treatment_duration, timebins)-1
+        mask_start = np.digitize(baseline_duration, timebins) - 1
+        mask_end = np.digitize(baseline_duration + treatment_duration, timebins) - 1
         masked_vals = np.ma.array(bin_vals)
         masked_vals[mask_start:mask_end] = np.ma.masked
         plt.plot(timebins[1:], masked_vals, label=f'Fish {fish}')
@@ -449,11 +454,12 @@ def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
     ax.set_xlabel('Time (s)', fontsize='x-large')
 
     # plt.axvline(baseline_duration, linestyle='dashed', color='black', linewidth=2)
-    plt.axvspan(baseline_duration, baseline_duration+treatment_duration+bin_duration, color='blue', alpha=0.1)
-    plt.text(baseline_duration+bin_duration+treatment_duration/2, maxval/2, 'DRUG TREATMENT', verticalalignment='center',
+    plt.axvspan(baseline_duration, baseline_duration + treatment_duration + bin_duration, color='blue', alpha=0.1)
+    plt.text(baseline_duration + bin_duration + treatment_duration / 2, maxval / 2, 'DRUG TREATMENT',
+             verticalalignment='center',
              horizontalalignment='center', rotation='vertical', fontsize='xx-large', color='navy')
     # plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
-                # alpha=0.2)
+    # alpha=0.2)
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     if level == 'exp':
@@ -465,7 +471,8 @@ def lineplot_perfish_incubation(folder, boutdf, level, measure, DOI_conc=0):
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
     return
-    
+
+
 def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
     # Plot line graph of measure over time per fish
     # Level can be 'exp' or 'conc'
@@ -480,10 +487,12 @@ def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
     labels.sort()
     fig, ax = plt.subplots(figsize=(20, 5))
 
-    baseline_duration = np.sum([boutdf[(boutdf.condition == 'baseline') & (boutdf.stim_index == _stim)].stim_duration.values[0]
-                                for _stim in boutdf[boutdf.condition == 'baseline'].stim_index.unique()])
-    drugtreated_duration = np.sum([boutdf[(boutdf.condition == 'drugtreated') & (boutdf.stim_index == _stim)].stim_duration.values[0]
-                                for _stim in boutdf[boutdf.condition == 'drugtreated'].stim_index.unique()])
+    baseline_duration = np.sum(
+        [boutdf[(boutdf.condition == 'baseline') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+         for _stim in boutdf[boutdf.condition == 'baseline'].stim_index.unique()])
+    drugtreated_duration = np.sum(
+        [boutdf[(boutdf.condition == 'drugtreated') & (boutdf.stim_index == _stim)].stim_duration.values[0]
+         for _stim in boutdf[boutdf.condition == 'drugtreated'].stim_index.unique()])
     total_duration = baseline_duration + treatment_duration + drugtreated_duration
 
     timebins = np.arange(0, total_duration + bin_duration + 1, bin_duration)
@@ -494,18 +503,20 @@ def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
         if measure == 'distance':
             bin_vals = np.nan_to_num([iddf[iddf['timebin_ind'] == i].distance.sum() for i in range(1, len(timebins))])
         elif measure == 'dist_from_center':
-            bin_vals = np.nan_to_num([iddf[(iddf['timebin_ind'] == i) & (iddf.bout.notna())].dist_from_center.mean() for i in range(1, len(timebins))])
+            bin_vals = np.nan_to_num(
+                [iddf[(iddf['timebin_ind'] == i) & (iddf.bout.notna())].dist_from_center.mean() for i in
+                 range(1, len(timebins))])
         if max(bin_vals) > maxval:
             maxval = max(bin_vals)
 
         # get the last timebin_ind of baseline and first timebin_ind of drugtreated to determine masked regions
-        mask_start = np.digitize(baseline_duration, timebins)-1
-        mask_end = np.digitize(baseline_duration+treatment_duration, timebins)-1
+        mask_start = np.digitize(baseline_duration, timebins) - 1
+        mask_end = np.digitize(baseline_duration + treatment_duration, timebins) - 1
         masked_vals = np.ma.array(bin_vals)
         masked_vals[mask_start:mask_end] = np.ma.masked
         plt.plot(timebins[1:], masked_vals, label=f'Fish {fish}')
 
-        plt.axvline(x=baseline_duration, color='b', ls= '--')
+        plt.axvline(x=baseline_duration, color='b', ls='--')
 
     if measure == 'distance':
         ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
@@ -528,6 +539,7 @@ def lineplot_perfish(folder, boutdf, level, measure, DOI_conc=0):
         print('Cannot save figure, level should be "exp" or "conc"')
     return
 
+
 def histplot(folder, df, level, measure):
     # Plot histogram of measure
     # Includes stat_time
@@ -539,7 +551,7 @@ def histplot(folder, df, level, measure):
 
     for _cond in conditions:
         subdf = df[df.condition == _cond]
-        tot_stimduration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0]  for s in
+        tot_stimduration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0] for s in
                                    subdf.stim_index.unique()])
         cnts, bins = np.histogram(np.nan_to_num(subdf[measure]), bins=bin_n)
         time_normalized_cnts = cnts / tot_stimduration * 1000
@@ -552,7 +564,9 @@ def histplot(folder, df, level, measure):
 
     if level == 'exp':
         plt.title(folder[folder.rfind('\\') + 1:], fontsize='x-large', pad=10)
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram'), dpi=300,
+                    transparent=False)
+
 
 def histplot_perfish(folder, df, level, measure):
     # Plot histogram of measure per fish
@@ -562,20 +576,20 @@ def histplot_perfish(folder, df, level, measure):
     df = df[df.bout.notna()]
     bin_n = ceil(np.sqrt(max([len(df[df.fish_id == _id][measure]) for _id in df.fish_id.unique()])))
     fig, axs = plt.subplots(nrows=len(df.stim_name.unique()), ncols=len(df.fish_id.unique()), sharex=True, sharey=True,
-                           figsize=(10 * len(df.fish_id.unique()), 5 * len(df.stim_name.unique())))
+                            figsize=(10 * len(df.fish_id.unique()), 5 * len(df.stim_name.unique())))
     stims = df.stim_name.unique()
 
     for j, _id in enumerate(df.fish_id.unique()):
         for _cond in conditions:
             for i, _stim in enumerate(stims):
                 subdf = df[(df.fish_id == _id) & (df.condition == _cond) & (df.stim_name == _stim) & (
-                            df.bout_start >= df.stat_time)]
+                        df.bout_start >= df.stat_time)]
                 tot_stimduration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0] -
                                            subdf[subdf.stim_index == s].stat_time.values[0] for s in
                                            subdf.stim_index.unique()])
                 cnts, bins = np.histogram(np.nan_to_num(subdf[measure]), bins=bin_n)
                 time_normalized_cnts = cnts / tot_stimduration * 1000
-                bin_centers = bins[:-1] + np.diff(bins)[0]/2 # find the center points of bins to have a line plot
+                bin_centers = bins[:-1] + np.diff(bins)[0] / 2  # find the center points of bins to have a line plot
                 axs[i, j].plot(bin_centers, time_normalized_cnts, label=_cond)
                 axs[i, j].legend()
                 if measure == 'bout_angle':
@@ -589,7 +603,9 @@ def histplot_perfish(folder, df, level, measure):
     fig.supxlabel(measure, fontsize='x-large', y=0.1)
     if level == 'exp':
         fig.suptitle(folder[folder.rfind('\\') + 1:], y=0.9, fontsize='x-large')
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram_perfish'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram_perfish'),
+                    dpi=300, transparent=False)
+
 
 def scatterplot_perfish(folder, df, level, stim_name):
     # Scatter plot of x-y coordinates over a given stim_name per condition per fish
@@ -606,7 +622,7 @@ def scatterplot_perfish(folder, df, level, stim_name):
                 stim = choice(subdf.stim_index.unique())
                 sub = subdf[subdf.stim_index == stim]
                 im = axs[i, j].scatter(sub.f0_x, sub.f0_y, c=sub.stim_time, cmap='Purples')
-                if i == 0 and j == len(_df.fish_id.unique())-1:
+                if i == 0 and j == len(_df.fish_id.unique()) - 1:
                     cbar = fig.colorbar(im, ax=axs[:, j], shrink=0.5)
                     cbar.set_label('stim_time', rotation=270, labelpad=20)
             # axs[i, j].set(adjustable='box', aspect='equal')
@@ -621,7 +637,9 @@ def scatterplot_perfish(folder, df, level, stim_name):
     fig.supxlabel('Fish ID', fontsize='xx-large')
     if level == 'exp':
         fig.suptitle(folder[folder.rfind('\\') + 1:] + '_' + stim_name, fontsize='xx-large')
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + stim_name + '_xycoords_perfish'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + stim_name + '_xycoords_perfish'),
+                    dpi=300, transparent=False)
+
 
 def lineplot_perconc(folder, boutdf, measure):
     # Plot line graph of average measure over time per concentration
@@ -654,11 +672,13 @@ def lineplot_perconc(folder, boutdf, measure):
         concdf = boutdf[boutdf.concentration == conc]
         if measure == 'distance':
             bin_vals = [[concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].distance.sum() for fish in
-                concdf.fish_id.unique()] for i in range(1, len(timebins))]
+                         concdf.fish_id.unique()] for i in range(1, len(timebins))]
         elif measure == 'dist_from_center':
-            bin_vals = [[concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].dist_from_center.mean() for fish in concdf.fish_id.unique()] for i in range(1, len(timebins))]
+            bin_vals = [
+                [concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].dist_from_center.mean() for fish in
+                 concdf.fish_id.unique()] for i in range(1, len(timebins))]
         bin_means = np.nanmean(bin_vals, axis=1)
-        bin_stds = [np.nanstd(t, ddof=1)/np.sqrt(len(t)) for t in bin_vals]
+        bin_stds = [np.nanstd(t, ddof=1) / np.sqrt(len(t)) for t in bin_vals]
         if max(bin_means) > maxval:
             maxval = max(bin_means)
 
@@ -683,6 +703,7 @@ def lineplot_perconc(folder, boutdf, measure):
 
     plt.savefig(os.path.join(folder, save_name), dpi=300, transparent=False)
 
+
 def histplot_perconc(folder, df, measure):
     # Plot histogram of average measure per concentration
     # Does not include stat_time
@@ -692,7 +713,7 @@ def histplot_perconc(folder, df, measure):
         return
 
     df = df[df.bout.notna()]
-    bins = np.arange(-180, 180+1, omr_bin_angle)
+    bins = np.arange(-180, 180 + 1, omr_bin_angle)
     bin_centers = bins[:-1] + np.diff(bins)[0] / 2
     fig, axs = plt.subplots(nrows=len(df.concentration.unique()), ncols=len(df.stim_name.unique()), sharex=True,
                             sharey=True,
@@ -713,19 +734,19 @@ def histplot_perconc(folder, df, measure):
                     cnts, _ = np.histogram(subdf.bout_angle, bins)
                     bin_vals.append(cnts / tot_stimduration * 1000)
                 bin_means = np.mean(bin_vals, axis=0)
-                bin_stds = np.std(bin_vals, axis=0, ddof=1)/np.sqrt(np.shape(bin_vals)[0])
+                bin_stds = np.std(bin_vals, axis=0, ddof=1) / np.sqrt(np.shape(bin_vals)[0])
                 '''new_vals = np.transpose(bin_vals)
                 bin_stds = [stats.t.interval(0.95, np.shape(new_vals)[1]-1, loc=np.mean(new_vals[a]), scale=stats.sem(new_vals[a])) for a in range(np.shape(new_vals)[0])]
                 cis = np.transpose(bin_stds)'''
                 if len(df.concentration.unique()) == 1:
                     axs[j].plot(bin_centers, bin_means, label=_cond)
-                    axs[j].fill_between(bin_centers, bin_means-bin_stds, bin_means+bin_stds, alpha=0.3)
+                    axs[j].fill_between(bin_centers, bin_means - bin_stds, bin_means + bin_stds, alpha=0.3)
                     axs[j].legend()
                     if measure == 'bout_angle':
                         axs[j].axvline(0, linestyle='dashed', color='black', linewidth=2)
                     if j == 0:
                         axs[j].set_ylabel(f'{_conc}, n={len(df[df.concentration == _conc].fish_id.unique())}',
-                                             fontsize='large')
+                                          fontsize='large')
                     if i == 0:
                         axs[j].set_title(_stim, fontsize='large')
                 else:
@@ -744,10 +765,10 @@ def histplot_perconc(folder, df, measure):
     fig.supxlabel(measure, fontsize='x-large')
     plt.savefig(os.path.join(folder, measure + '_histogram_perconc'), dpi=300, transparent=False)
 
-def histplot_boutduration(folder, df):
 
+def histplot_boutduration(folder, df):
     df = df[df.bout.notna()]
-    bins = np.arange(0, 1+bout_duration_bin, bout_duration_bin)
+    bins = np.arange(0, 1 + bout_duration_bin, bout_duration_bin)
     bin_centers = bins[:-1] + np.diff(bins)[0] / 2
     fig, axs = plt.subplots(ncols=len(df.concentration.unique()), sharex=True, sharey=True, constrained_layout=True,
                             figsize=(10 * len(df.concentration.unique()), 5))
@@ -758,7 +779,7 @@ def histplot_boutduration(folder, df):
             for _id in df[df.concentration == _conc].fish_id.unique():
                 subdf = df[(df.concentration == _conc) & (df.fish_id == _id) & (df.condition == _cond)]
                 tot_stimduration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0] for s in
-                                        subdf.stim_index.unique()])
+                                           subdf.stim_index.unique()])
                 cnts, _ = np.histogram(subdf['bout_duration'], bins)
                 bin_vals.append(cnts / tot_stimduration * 1000)
             bin_means = np.mean(bin_vals, axis=0)
@@ -769,17 +790,18 @@ def histplot_boutduration(folder, df):
                 axs.legend()
                 axs.set_ylabel('Frequency (mHz)', fontsize='large')
                 axs.set_title(f'{_conc}, n={len(df[df.concentration == _conc].fish_id.unique())}',
-                               fontsize='large')
+                              fontsize='large')
             else:
                 axs[i].plot(bin_centers, bin_means, label=_cond)
                 axs[i].fill_between(bin_centers, bin_means + bin_stds, bin_means - bin_stds, alpha=0.3)
                 axs[i].legend()
                 axs[i].set_title(f'{_conc}, n={len(df[df.concentration == _conc].fish_id.unique())}',
-                              fontsize='large')
+                                 fontsize='large')
                 if i == 0:
                     axs[i].set_ylabel('Frequency (mHz)', fontsize='large')
     fig.supxlabel('Bout duration (s)', fontsize='x-large')
     plt.savefig(os.path.join(folder, 'bout_duration_histogram_perconc'), dpi=300, transparent=False)
+
 
 def lineplot_perconc_baselinenorm(folder, boutdf, measure):
     # Plot line graph of average measure over time per concentration, normalized to baseline
@@ -813,17 +835,18 @@ def lineplot_perconc_baselinenorm(folder, boutdf, measure):
         # baseline_avg = np.nan_to_num(concdf[concdf.condition == 'baseline'][measure]).sum()/len(timebins)
         if measure == 'distance':
             bin_vals = [[concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].distance.sum() for fish in
-                    concdf.fish_id.unique()] for i in range(1, len(timebins))]
+                         concdf.fish_id.unique()] for i in range(1, len(timebins))]
             baseline_avg = np.nanmean(np.ndarray.flatten(np.array(bin_vals[:mask_start])))
-            norm_bin_vals = bin_vals/baseline_avg
+            norm_bin_vals = bin_vals / baseline_avg
         elif measure == 'dist_from_center':
-            bin_vals = [[concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].dist_from_center.mean() for fish
+            bin_vals = [
+                [concdf[(concdf.fish_id == fish) & (concdf['timebin_ind'] == i)].dist_from_center.mean() for fish
                  in concdf.fish_id.unique()] for i in range(1, len(timebins))]
             baseline_avg = np.nanmean(np.ndarray.flatten(np.array(bin_vals[:mask_start])))
-            norm_bin_vals = bin_vals/baseline_avg
+            norm_bin_vals = bin_vals / baseline_avg
 
         bin_means = np.nanmean(norm_bin_vals, axis=1)
-        bin_stds = np.nanstd(norm_bin_vals, ddof=1, axis=1)/np.sqrt(np.shape(norm_bin_vals)[1])
+        bin_stds = np.nanstd(norm_bin_vals, ddof=1, axis=1) / np.sqrt(np.shape(norm_bin_vals)[1])
         if max(bin_means) > maxval:
             maxval = max(bin_means)
 
@@ -849,7 +872,6 @@ def lineplot_perconc_baselinenorm(folder, boutdf, measure):
     plt.savefig(os.path.join(folder, save_name), dpi=300, transparent=False)
 
 
-
 def normalize_fish(df, measure, bin_stds, mask_start):
     # Normalize data to baseline average
 
@@ -859,14 +881,15 @@ def normalize_fish(df, measure, bin_stds, mask_start):
         bin_vals = [df[df.timebin_ind == i].dist_from_center.mean() for i in range(1, len(timebins))]
 
     baseline_mean = np.nanmean(bin_vals[:mask_start])
-    norm_bin_vals = bin_vals/baseline_mean
+    norm_bin_vals = bin_vals / baseline_mean
+
 
 def plot_distovertime(folder, boutdf, level, DOI_conc=0):
-# Plot total distance over time per fish
-# Level can be 'exp' or 'conc'
+    # Plot total distance over time per fish
+    # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2*habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     maxval = 0
@@ -879,15 +902,18 @@ def plot_distovertime(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2*habit_duration + baseline_loco_duration, color='blue', alpha=0.2)
+    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+                alpha=0.2)
     ax.legend(loc='upper right')
     if level == 'exp':
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\')+1:] + '_distovertime_perfish.png'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_distovertime_perfish.png'), dpi=300,
+                    transparent=False)
     elif level == 'conc':
         plt.savefig(os.path.join(folder, f'{DOI_conc}_distovertime_perfish.png'), dpi=300, transparent=False)
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
     return
+
 
 def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Plot total distance over time per fish, normalized to average baseline locomotor activity
@@ -904,9 +930,10 @@ def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
                                    (boutdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
         bin_means = [boutdf[boutdf['fish_id'] == fish][inds == i].distance.sum() for i in range(len(timebins))]
         baseline_vals = [boutdf[(boutdf['fish_id'] == fish) & (boutdf['condition'] == 'baseline') &
-                               (boutdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in range(len(timebins))]
+                                (boutdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
+                         range(len(timebins))]
         baseline = np.nan_to_num(np.mean([baseline_vals[i] for i in np.nonzero(baseline_vals)[0]]))
-        norm_bin_means = (bin_means - baseline)/baseline
+        norm_bin_means = (bin_means - baseline) / baseline
         if max(norm_bin_means) > maxval:
             maxval = max(norm_bin_means)
         plt.plot(timebins, norm_bin_means, label=f'Fish {fish}')
@@ -917,18 +944,20 @@ def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
                 alpha=0.2)
     ax.legend(loc='upper right')
     if level == 'exp':
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\')+1:] + '_normdistovertime_perfish.png'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_normdistovertime_perfish.png'), dpi=300,
+                    transparent=False)
     elif level == 'conc':
         plt.savefig(os.path.join(folder, f'{DOI_conc}_normdistovertime_perfish.png'), dpi=300, transparent=False)
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
     return
 
+
 def plot_all_distovertime(folder, alldf):
-# Plot average distance over time per concentration
+    # Plot average distance over time per concentration
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2*habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
     labels = [int(i) for i in alldf.concentration.unique()]
     labels.sort()
 
@@ -948,9 +977,11 @@ def plot_all_distovertime(folder, alldf):
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2*habit_duration + baseline_loco_duration, color='blue', alpha=0.2)
+    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+                alpha=0.2)
     ax.legend(loc='upper right')
     plt.savefig(os.path.join(folder, 'distovertime_perconc.png'), dpi=300, transparent=False)
+
 
 def plot_all_distovertime_normalized(folder, alldf):
     # Plot average distance over time per concentration, normalized to average baseline locomotor activity
@@ -965,10 +996,10 @@ def plot_all_distovertime_normalized(folder, alldf):
         for fish in subdf.fish_id.unique():
             inds = np.digitize(subdf[subdf['fish_id'] == fish].cum_bout_start, timebins)
             inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                       (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
+                                      (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
             bin_sum = [subdf[subdf['fish_id'] == fish][inds == i].distance.sum() for i in range(len(timebins))]
             baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                    (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
+                                   (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
                              range(len(timebins))]
             baseline = np.nan_to_num(np.mean([baseline_vals[i] for i in np.nonzero(baseline_vals)[0]]))
             norm_bin_sums = (bin_sum - baseline) / baseline
@@ -988,15 +1019,17 @@ def plot_all_distovertime_normalized(folder, alldf):
     plt.savefig(os.path.join(folder, 'normdistovertime_perconc.png'), dpi=300, transparent=False)
     return bin_sums
 
+
 def bin_anova(bin_sums, labels):
     for t in range(len(bin_sums)):
-        fvalue, pvalue = stats.f_oneway(bin_sums[t][0], bin_sums[t][1], bin_sums[t][2], bin_sums[t][3], bin_sums[t][4], bin_sums[t][5]) # CHANGE THIS
+        fvalue, pvalue = stats.f_oneway(bin_sums[t][0], bin_sums[t][1], bin_sums[t][2], bin_sums[t][3], bin_sums[t][4],
+                                        bin_sums[t][5])  # CHANGE THIS
         if pvalue < 0.05:
             print(f'Time point: {t}, F value: {fvalue}, p value: {pvalue}')
             concs = []
             norm_dists = []
             for i, conc in enumerate(labels):
-                concs.extend([conc]*len(bin_sums[t][i]))
+                concs.extend([conc] * len(bin_sums[t][i]))
                 norm_dists.extend(bin_sums[t][i])
             t_df = {'concentration': concs, 'norm_dist': norm_dists}
 
@@ -1025,22 +1058,26 @@ def bin_anova(bin_sums, labels):
             plt.show()"""
 
             if pval >= 0.05:
-                w, pval = stats.bartlett(bin_sums[t][0], bin_sums[t][1], bin_sums[t][2], bin_sums[t][3], bin_sums[t][4], bin_sums[t][5]) # CHANGE THIS
-                print(f'Since data is drawn from normal distribution, Bartlett\'s test to check if equal variances: statistic: {w}, '
-                      f'p value: {pval}\nNon-significant p value means equal variances')
+                w, pval = stats.bartlett(bin_sums[t][0], bin_sums[t][1], bin_sums[t][2], bin_sums[t][3], bin_sums[t][4],
+                                         bin_sums[t][5])  # CHANGE THIS
+                print(
+                    f'Since data is drawn from normal distribution, Bartlett\'s test to check if equal variances: statistic: {w}, '
+                    f'p value: {pval}\nNon-significant p value means equal variances')
             else:
                 res.levene(df=pd.DataFrame(t_df), res_var='norm_dist', xfac_var='concentration')
-                print('Since data is not drawn from normal distribution, Levene\'s test to check if equal variances.\nNon-significant p value means equal variances')
+                print(
+                    'Since data is not drawn from normal distribution, Levene\'s test to check if equal variances.\nNon-significant p value means equal variances')
                 print(res.levene_summary)
 
     return
 
+
 def plot_avgdistovertime(folder, boutdf, level, DOI_conc=0):
-# Plot average total distance over time
-# Level can be 'exp' or 'conc'
+    # Plot average total distance over time
+    # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2*habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     bin_sums = [[] for _ in range(len(timebins))]
@@ -1059,14 +1096,17 @@ def plot_avgdistovertime(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Average Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2*habit_duration + baseline_loco_duration, color='blue', alpha=0.2)
+    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+                alpha=0.2)
     if level == 'exp':
-        plt.savefig(os.path.join(folder, folder[folder.rfind('\\')+1:] + '_avgdistovertime.png'), dpi=300, transparent=False)
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_avgdistovertime.png'), dpi=300,
+                    transparent=False)
     elif level == 'conc':
         plt.savefig(os.path.join(folder, f'{DOI_conc}_avgdistovertime.png'), dpi=300, transparent=False)
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
     return
+
 
 def plot_avgdistovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Plot average total distance over time, normalized to average baseline locomotor activity
@@ -1109,6 +1149,7 @@ def plot_avgdistovertime_normalized(folder, boutdf, level, DOI_conc=0):
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
     return
+
 
 def plt_avgperconc(folder, alldf, measure):
     # Plot bar graphs of average measures per condition
@@ -1172,7 +1213,8 @@ def plt_avgperconc(folder, alldf, measure):
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                     return
-                baseline_habits.append(np.nan_to_num(np.mean([baseline_habit[i] for i in np.nonzero(baseline_habit)[0]])))
+                baseline_habits.append(
+                    np.nan_to_num(np.mean([baseline_habit[i] for i in np.nonzero(baseline_habit)[0]])))
                 baseline_locos.append(np.nan_to_num(np.mean([baseline_loco[i] for i in np.nonzero(baseline_loco)[0]])))
                 drug_habits.append(np.nan_to_num(np.mean([drug_habit[i] for i in np.nonzero(drug_habit)[0]])))
                 drug_locos.append(np.nan_to_num(np.mean([drug_loco[i] for i in np.nonzero(drug_loco)[0]])))
@@ -1180,29 +1222,75 @@ def plt_avgperconc(folder, alldf, measure):
             elif 'thigmotaxis' in measure:
                 if measure == 'thigmotaxis_dist':
                     baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                  (subdf['stim_name'] == 'habituation') & (subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (subdf['stim_name'] == 'habituation')].distance.sum())
+                                                  (subdf['stim_name'] == 'habituation') & (
+                                                              subdf['in_center'] == False)].distance.sum()) / (subdf[(
+                                                                                                                                 subdf[
+                                                                                                                                     'fish_id'] == fish) & (
+                                                                                                                                 subdf[
+                                                                                                                                     'condition'] == 'baseline') & (
+                                                                                                                                 subdf[
+                                                                                                                                     'stim_name'] == 'habituation')].distance.sum())
 
                     baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                 (subdf['stim_name'] == 'locomotion') & (subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (subdf['stim_name'] == 'locomotion')].distance.sum())
+                                                 (subdf['stim_name'] == 'locomotion') & (
+                                                             subdf['in_center'] == False)].distance.sum()) / (subdf[(
+                                                                                                                                subdf[
+                                                                                                                                    'fish_id'] == fish) & (
+                                                                                                                                subdf[
+                                                                                                                                    'condition'] == 'baseline') & (
+                                                                                                                                subdf[
+                                                                                                                                    'stim_name'] == 'locomotion')].distance.sum())
 
                     drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                              (subdf['stim_name'] == 'habituation') & (subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') & (subdf['stim_name'] == 'habituation')].distance.sum())
+                                              (subdf['stim_name'] == 'habituation') & (
+                                                          subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
+                                                                                                                      'fish_id'] == fish) & (
+                                                                                                                             subdf[
+                                                                                                                                 'condition'] == 'drugtreated') & (
+                                                                                                                             subdf[
+                                                                                                                                 'stim_name'] == 'habituation')].distance.sum())
 
                     drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                             (subdf['stim_name'] == 'locomotion') & (subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') & (subdf['stim_name'] == 'locomotion')].distance.sum())
+                                             (subdf['stim_name'] == 'locomotion') & (
+                                                         subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
+                                                                                                                     'fish_id'] == fish) & (
+                                                                                                                            subdf[
+                                                                                                                                'condition'] == 'drugtreated') & (
+                                                                                                                            subdf[
+                                                                                                                                'stim_name'] == 'locomotion')].distance.sum())
 
                 elif measure == 'thigmotaxis_time':
                     baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                  (subdf['stim_name'] == 'habituation') & (subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (subdf['stim_name'] == 'habituation')].bout_duration.sum())
+                                                  (subdf['stim_name'] == 'habituation') & (
+                                                              subdf['in_center'] == False)].bout_duration.sum()) / (
+                                         subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
+                                                     subdf['stim_name'] == 'habituation')].bout_duration.sum())
 
                     baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                 (subdf['stim_name'] == 'locomotion') & (subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (subdf['stim_name'] == 'locomotion')].bout_duration.sum())
+                                                 (subdf['stim_name'] == 'locomotion') & (
+                                                             subdf['in_center'] == False)].bout_duration.sum()) / (
+                                        subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
+                                                    subdf['stim_name'] == 'locomotion')].bout_duration.sum())
 
                     drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                              (subdf['stim_name'] == 'habituation') & (subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') & (subdf['stim_name'] == 'habituation')].bout_duration.sum())
+                                              (subdf['stim_name'] == 'habituation') & (
+                                                          subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
+                                                                                                                                  subdf[
+                                                                                                                                      'fish_id'] == fish) & (
+                                                                                                                                  subdf[
+                                                                                                                                      'condition'] == 'drugtreated') & (
+                                                                                                                                  subdf[
+                                                                                                                                      'stim_name'] == 'habituation')].bout_duration.sum())
 
                     drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                             (subdf['stim_name'] == 'locomotion') & (subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') & (subdf['stim_name'] == 'locomotion')].bout_duration.sum())
+                                             (subdf['stim_name'] == 'locomotion') & (
+                                                         subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
+                                                                                                                                 subdf[
+                                                                                                                                     'fish_id'] == fish) & (
+                                                                                                                                 subdf[
+                                                                                                                                     'condition'] == 'drugtreated') & (
+                                                                                                                                 subdf[
+                                                                                                                                     'stim_name'] == 'locomotion')].bout_duration.sum())
                 else:
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
@@ -1243,5 +1331,4 @@ def plt_avgperconc(folder, alldf, measure):
         print('Cannot save figure; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
         return
 
-
-#def plt_avgperconc_normalized(folder, alldf, measure):
+# def plt_avgperconc_normalized(folder, alldf, measure):
