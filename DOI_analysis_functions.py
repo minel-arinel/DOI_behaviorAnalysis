@@ -313,7 +313,6 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         - fails baseline criteria for good_fish
     """
 
-
     for i, _id in enumerate(fish_ids):
         index = 0
         checker = {
@@ -340,16 +339,6 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                 good_fish.append(_id)
             elif False in val_lst and val_lst[0] is not False:
                 inactive_fish.append(_id)
-
-            # TODO: remove the upper bound if over (keep lower)
-            # TODO: keep habituation forward and right or left (lower bound)
-                cnts = []
-                for _ in df[_id][_cond].values:
-                    cnts.append(True) if bout_count_lowerthreshold <= _ <= bout_count_upperthreshold else cnts.append(
-                        False)
-                if False in cnts and _id in good_fish:
-                    # if all baseline bout counts are within the upper and lower bounds, add to good_fish
-                    good_fish.remove(_id)
 
         for j, val in enumerate(vals):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
@@ -1223,74 +1212,74 @@ def plt_avgperconc(folder, alldf, measure):
                 if measure == 'thigmotaxis_dist':
                     baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
                                                   (subdf['stim_name'] == 'habituation') & (
-                                                              subdf['in_center'] == False)].distance.sum()) / (subdf[(
-                                                                                                                                 subdf[
-                                                                                                                                     'fish_id'] == fish) & (
-                                                                                                                                 subdf[
-                                                                                                                                     'condition'] == 'baseline') & (
-                                                                                                                                 subdf[
-                                                                                                                                     'stim_name'] == 'habituation')].distance.sum())
+                                                          subdf['in_center'] == False)].distance.sum()) / (subdf[(
+                                                                                                                         subdf[
+                                                                                                                             'fish_id'] == fish) & (
+                                                                                                                         subdf[
+                                                                                                                             'condition'] == 'baseline') & (
+                                                                                                                         subdf[
+                                                                                                                             'stim_name'] == 'habituation')].distance.sum())
 
                     baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
                                                  (subdf['stim_name'] == 'locomotion') & (
-                                                             subdf['in_center'] == False)].distance.sum()) / (subdf[(
-                                                                                                                                subdf[
-                                                                                                                                    'fish_id'] == fish) & (
-                                                                                                                                subdf[
-                                                                                                                                    'condition'] == 'baseline') & (
-                                                                                                                                subdf[
-                                                                                                                                    'stim_name'] == 'locomotion')].distance.sum())
+                                                         subdf['in_center'] == False)].distance.sum()) / (subdf[(
+                                                                                                                        subdf[
+                                                                                                                            'fish_id'] == fish) & (
+                                                                                                                        subdf[
+                                                                                                                            'condition'] == 'baseline') & (
+                                                                                                                        subdf[
+                                                                                                                            'stim_name'] == 'locomotion')].distance.sum())
 
                     drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
                                               (subdf['stim_name'] == 'habituation') & (
-                                                          subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
-                                                                                                                      'fish_id'] == fish) & (
-                                                                                                                             subdf[
-                                                                                                                                 'condition'] == 'drugtreated') & (
-                                                                                                                             subdf[
-                                                                                                                                 'stim_name'] == 'habituation')].distance.sum())
+                                                      subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
+                                                                                                                  'fish_id'] == fish) & (
+                                                                                                                     subdf[
+                                                                                                                         'condition'] == 'drugtreated') & (
+                                                                                                                     subdf[
+                                                                                                                         'stim_name'] == 'habituation')].distance.sum())
 
                     drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
                                              (subdf['stim_name'] == 'locomotion') & (
-                                                         subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
-                                                                                                                     'fish_id'] == fish) & (
-                                                                                                                            subdf[
-                                                                                                                                'condition'] == 'drugtreated') & (
-                                                                                                                            subdf[
-                                                                                                                                'stim_name'] == 'locomotion')].distance.sum())
+                                                     subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
+                                                                                                                 'fish_id'] == fish) & (
+                                                                                                                    subdf[
+                                                                                                                        'condition'] == 'drugtreated') & (
+                                                                                                                    subdf[
+                                                                                                                        'stim_name'] == 'locomotion')].distance.sum())
 
                 elif measure == 'thigmotaxis_time':
                     baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
                                                   (subdf['stim_name'] == 'habituation') & (
-                                                              subdf['in_center'] == False)].bout_duration.sum()) / (
+                                                          subdf['in_center'] == False)].bout_duration.sum()) / (
                                          subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
-                                                     subdf['stim_name'] == 'habituation')].bout_duration.sum())
+                                                 subdf['stim_name'] == 'habituation')].bout_duration.sum())
 
                     baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
                                                  (subdf['stim_name'] == 'locomotion') & (
-                                                             subdf['in_center'] == False)].bout_duration.sum()) / (
+                                                         subdf['in_center'] == False)].bout_duration.sum()) / (
                                         subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
-                                                    subdf['stim_name'] == 'locomotion')].bout_duration.sum())
+                                                subdf['stim_name'] == 'locomotion')].bout_duration.sum())
 
                     drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
                                               (subdf['stim_name'] == 'habituation') & (
-                                                          subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
-                                                                                                                                  subdf[
-                                                                                                                                      'fish_id'] == fish) & (
-                                                                                                                                  subdf[
-                                                                                                                                      'condition'] == 'drugtreated') & (
-                                                                                                                                  subdf[
-                                                                                                                                      'stim_name'] == 'habituation')].bout_duration.sum())
+                                                      subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
+                                                                                                                          subdf[
+                                                                                                                              'fish_id'] == fish) & (
+                                                                                                                          subdf[
+                                                                                                                              'condition'] == 'drugtreated') & (
+                                                                                                                          subdf[
+                                                                                                                              'stim_name'] == 'habituation')].bout_duration.sum())
 
                     drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
                                              (subdf['stim_name'] == 'locomotion') & (
-                                                         subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
-                                                                                                                                 subdf[
-                                                                                                                                     'fish_id'] == fish) & (
-                                                                                                                                 subdf[
-                                                                                                                                     'condition'] == 'drugtreated') & (
-                                                                                                                                 subdf[
-                                                                                                                                     'stim_name'] == 'locomotion')].bout_duration.sum())
+                                                     subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
+                                                                                                                         subdf[
+                                                                                                                             'fish_id'] == fish) & (
+                                                                                                                         subdf[
+                                                                                                                             'condition'] == 'drugtreated') & (
+                                                                                                                         subdf[
+                                                                                                                             'stim_name'] == 'locomotion')].bout_duration.sum())
                 else:
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
