@@ -313,6 +313,8 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         - fails baseline criteria for good_fish
     """
 
+    """get the names of the actual treatments instead of index=0"""
+
     for i, _id in enumerate(fish_ids):
         index = 0
         checker = {
@@ -328,7 +330,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                         checker["below-upper"] = False
                     if index in [0, 1] and val <= bout_count_lowerthreshold:
                         checker["above-lower"] = False
-                    elif index in [2, 3] and val <= bout_count_lowerthreshold:
+                    elif index in [2, 3] and val <= bout_count_lowerthreshold: # TODO: look at this
                         checker["right-left"] = False
                     index += 1
             if _cond == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
