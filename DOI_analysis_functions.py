@@ -277,6 +277,12 @@ def measurepertime(boutdf, measure, time):
     return _df
 
 
+
+def get_stimulus_names(df):
+    """takes in a pandas dataframe and returns a list of the stimuli (rows of dataframe) presented to the fish"""
+    pass
+
+
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
     # Measure can be 'distance' or 'boutcount'
@@ -314,6 +320,8 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     """
 
     """get the names of the actual treatments instead of index=0"""
+
+    stimulus_names = get_stimulus_names(df) #makes a call to get a list of all the stimulus names
 
     for i, _id in enumerate(fish_ids):
         index = 0
