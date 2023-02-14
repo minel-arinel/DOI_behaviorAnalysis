@@ -320,7 +320,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         checker = {
             "below-upper": True,
             "above-lower": True,
-            "right-left": True
+            "right-left": False
         }
         for _cond in df[_id].columns:
             values = df[_id][_cond].values()
@@ -330,8 +330,8 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                         checker["below-upper"] = False
                     if index in [0, 1] and val <= bout_count_lowerthreshold:
                         checker["above-lower"] = False
-                    elif index in [2, 3] and val <= bout_count_lowerthreshold: # TODO: look at this
-                        checker["right-left"] = False
+                    elif index in [2, 3] and val > bout_count_lowerthreshold: # TODO: look at this
+                        checker["right-left"] = True
                     index += 1
             if _cond == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
                 for val in values:
