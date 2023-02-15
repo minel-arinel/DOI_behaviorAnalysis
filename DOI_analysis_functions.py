@@ -280,7 +280,8 @@ def measurepertime(boutdf, measure, time):
 
 def get_stimulus_names(df):
     """takes in a pandas dataframe and returns a list of the stimuli (rows of dataframe) presented to the fish"""
-    pass
+    data_top = df.head()
+    return list(data_top.index) # [habituation, forward, right, left, backwards] [0.66, 0, 81, 10, 0]
 
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
@@ -321,24 +322,27 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
 
     """get the names of the actual treatments instead of index=0"""
 
-    stimulus_names = get_stimulus_names(df) #makes a call to get a list of all the stimulus names
+    stimulus_lst = get_stimulus_names(df) #makes a call to get a list of all the stimulus names
 
     for i, _id in enumerate(fish_ids):
+        """TODO: make this part below into a separate function"""
         index = 0
         checker = {
             "below-upper": True,
-            "above-lower": True,
+            "habituation": True,
+            "forward": True,
             "right-left": False
         }
         for _cond in df[_id].columns:
             values = df[_id][_cond].values()
             if _cond == 'baseline' and df.measure == 'boutcount':  # added the check for drugtreated as well
                 for val in values:
+                    stimulus = stimulus_lst[index]
                     if val >= bout_count_upperthreshold:
                         checker["below-upper"] = False
-                    if index in [0, 1] and val <= bout_count_lowerthreshold:
-                        checker["above-lower"] = False
-                    elif index in [2, 3] and val > bout_count_lowerthreshold: # TODO: look at this
+                    if (stimulus == "habituation" or stimulus == "forward") and val <= bout_count_lowerthreshold:
+                        checker[stimulus] = False
+                    elif (stimulus == "left" or stimulus == "right") and val > bout_count_lowerthreshold:
                         checker["right-left"] = True
                     index += 1
             if _cond == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
@@ -378,7 +382,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
 
-    return good_fish
+    return good_fish, inactive_fish
 
     '''below_baseline_habit = np.minimum(np.array(baseline_habits), bout_count_upperthreshold)
         below_baseline_loco = np.minimum(np.array(baseline_locos), bout_count_upperthreshold)
