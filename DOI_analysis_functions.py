@@ -333,19 +333,12 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
             "forward": True,
             "right-left": False
         }
-<<<<<<< Updated upstream
 
-        values = []
-        for _cond in df[_id].columns:
-            values.extend(df[_id][_cond].values)
-            if _cond == 'baseline' and df.measure == 'boutcount':  # added the check for drugtreated as well
-                for val in values:
-=======
+        data_values = []
         for condition in df[_id].columns:
-            data_values = df[_id][condition].values()
+            data_values.extend(df[_id][condition].values)
             if condition == 'baseline' and df.measure == 'boutcount':
                 for value in data_values:
->>>>>>> Stashed changes
                     stimulus = stimulus_lst[index]
                     if value >= bout_count_upperthreshold:
                         fish_criteria_dict["below-upper"] = False
@@ -366,12 +359,12 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                 # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
                 inactive_fish.append(_id)
 
-        for j, value in enumerate(vals):
+        for j, value in enumerate(data_values):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
             if i == 0:  # only add labels for the first fish so that they are not repeated in the legend for every fish
-                ax.bar(_x, vals[j], width, label=labels[j])
+                ax.bar(_x, data_values[j], width, label=labels[j])
             else:
-                ax.bar(_x, vals[j], width)
+                ax.bar(_x, data_values[j], width)
 
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
