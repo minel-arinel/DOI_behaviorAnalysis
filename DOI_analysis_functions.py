@@ -333,8 +333,10 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
             "forward": True,
             "right-left": False
         }
+
+        values = []
         for _cond in df[_id].columns:
-            values = df[_id][_cond].values()
+            values.extend(df[_id][_cond].values)
             if _cond == 'baseline' and df.measure == 'boutcount':  # added the check for drugtreated as well
                 for val in values:
                     stimulus = stimulus_lst[index]
