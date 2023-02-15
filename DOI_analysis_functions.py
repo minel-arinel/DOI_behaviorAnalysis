@@ -281,7 +281,7 @@ def measurepertime(boutdf, measure, time):
 def get_stimulus_names(df):
     """takes in a pandas dataframe and returns a list of the stimuli (rows of dataframe) presented to the fish"""
     data_top = df.head()
-    return list(data_top.index) # [habituation, forward, right, left, backwards] [0.66, 0, 81, 10, 0]
+    return list(data_top.index)   # [habituation, forward, right, left, backwards]
 
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
@@ -327,37 +327,46 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     for i, _id in enumerate(fish_ids):
         """TODO: make this part below into a separate function"""
         index = 0
-        checker = {
+        fish_criteria_dict = {
             "below-upper": True,
             "habituation": True,
             "forward": True,
             "right-left": False
         }
+<<<<<<< Updated upstream
 
         values = []
         for _cond in df[_id].columns:
             values.extend(df[_id][_cond].values)
             if _cond == 'baseline' and df.measure == 'boutcount':  # added the check for drugtreated as well
                 for val in values:
+=======
+        for condition in df[_id].columns:
+            data_values = df[_id][condition].values()
+            if condition == 'baseline' and df.measure == 'boutcount':
+                for value in data_values:
+>>>>>>> Stashed changes
                     stimulus = stimulus_lst[index]
-                    if val >= bout_count_upperthreshold:
-                        checker["below-upper"] = False
-                    if (stimulus == "habituation" or stimulus == "forward") and val <= bout_count_lowerthreshold:
-                        checker[stimulus] = False
-                    elif (stimulus == "left" or stimulus == "right") and val > bout_count_lowerthreshold:
-                        checker["right-left"] = True
+                    if value >= bout_count_upperthreshold:
+                        fish_criteria_dict["below-upper"] = False
+                    if (stimulus == "habituation" or stimulus == "forward") and value <= bout_count_lowerthreshold:
+                        fish_criteria_dict[stimulus] = False
+                    elif (stimulus == "left" or stimulus == "right") and value > bout_count_lowerthreshold:
+                        fish_criteria_dict["right-left"] = True
                     index += 1
-            if _cond == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
-                for val in values:
-                    if val >= bout_count_upperthreshold:
-                        checker["below-upper"] = False
-            val_lst = list(checker.values())
-            if all(val_lst):
+            if condition == 'drugtreated' and df.measure == 'boutcount':  # added the check for drugtreated as well
+                for value in data_values:
+                    if value >= bout_count_upperthreshold:
+                        fish_criteria_dict["below-upper"] = False
+            criteria_value_lst = list(fish_criteria_dict.values())
+            if all(criteria_value_lst):
+                # if all the criteria is met, add fish to good_fish list
                 good_fish.append(_id)
-            elif False in val_lst and val_lst[0] is not False:
+            elif False in criteria_value_lst and criteria_value_lst[0] is not False:
+                # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
                 inactive_fish.append(_id)
 
-        for j, val in enumerate(vals):
+        for j, value in enumerate(vals):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
             if i == 0:  # only add labels for the first fish so that they are not repeated in the legend for every fish
                 ax.bar(_x, vals[j], width, label=labels[j])
