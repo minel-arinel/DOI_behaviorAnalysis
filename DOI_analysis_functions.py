@@ -351,13 +351,13 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                 for value in data_values:
                     if value >= bout_count_upperthreshold:
                         fish_criteria_dict["below-upper"] = False
-            criteria_value_lst = list(fish_criteria_dict.values())
-            if all(criteria_value_lst):
-                # if all the criteria is met, add fish to good_fish list
-                good_fish.append(_id)
-            elif False in criteria_value_lst and criteria_value_lst[0] is not False:
-                # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
-                inactive_fish.append(_id)
+        criteria_value_lst = list(fish_criteria_dict.values())
+        if all(criteria_value_lst):
+            # if all the criteria is met, add fish to good_fish list
+            good_fish.append(_id)
+        elif False in criteria_value_lst and criteria_value_lst[0] is not False:
+            # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
+            inactive_fish.append(_id)
 
         for j, value in enumerate(data_values):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
