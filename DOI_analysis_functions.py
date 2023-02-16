@@ -280,8 +280,57 @@ def measurepertime(boutdf, measure, time):
 
 def get_stimulus_names(df):
     """takes in a pandas dataframe and returns a list of the stimuli (rows of dataframe) presented to the fish"""
-    data_top = df.head()
-    return list(data_top.index)   # [habituation, forward, right, left, backwards]
+    return list(df.index)   # [habituation, forward, right, left, backwards]
+
+
+def separate_fish_by_criteria():
+    """ this function separates all fish by into categories
+        criteria for good_fish:
+           - neither baseline nor drugtreated should cross upper bound
+           - baseline habituation, baseline forward, and either baseline left or right over lower bound
+
+        criteria for inactive_fish:
+           - neither baseline nor drugtreated should cross upper bound
+           - fails baseline criteria for good_fish
+       """
+    fish_ids = list(df.columns.get_level_values(0).unique())
+    good_fish = []
+    inactive_fish = []
+
+    stimulus_lst = get_stimulus_names(df)  # makes a call to get a list of all the stimulus names
+
+    for i, _id in enumerate(fish_ids):
+        """TODO: make this part below into a separate function"""
+        index = 0
+        fish_criteria_dict = {
+            "below-upper": True,
+            "habituation": True,
+            "forward": True,
+            "right-left": False
+        }
+
+        data_values = []
+        for condition in df[_id].columns:
+            data_values.extend(df[_id][condition].values)
+            if (condition == 'baseline' or condition == "drugtreated") and df.measure == 'boutcount':
+                for value in data_values:
+                    stimulus = stimulus_lst[index]
+                    if value >= bout_count_upperthreshold:
+                        fish_criteria_dict["below-upper"] = False
+                    if condition == 'baseline':
+                        if (stimulus == "habituation" or stimulus == "forward") and value <= bout_count_lowerthreshold:
+                            fish_criteria_dict[stimulus] = False
+                        elif (stimulus == "left" or stimulus == "right") and value > bout_count_lowerthreshold:
+                            fish_criteria_dict["right-left"] = True
+                    index += 1
+        criteria_value_lst = list(fish_criteria_dict.values())
+        if all(criteria_value_lst):
+            # if all the criteria is met, add fish to good_fish list
+            good_fish.append(_id)
+        elif False in criteria_value_lst and criteria_value_lst[0] is not False:
+            # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
+            inactive_fish.append(_id)
+
 
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
@@ -310,22 +359,10 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
 
     good_fish = []
     inactive_fish = []
-    """
-    criteria for good_fish:
-        - neither baseline nor drugtreated should cross upper bound -----DONE-----
-        - baseline habituation, baseline forward, and either baseline left or right over lower bound
-        
-    criteria for inactive_fish:
-        - neither baseline nor drugtreated should cross upper bound
-        - fails baseline criteria for good_fish
-    """
 
-    """get the names of the actual treatments instead of index=0"""
-
-    stimulus_lst = get_stimulus_names(df) #makes a call to get a list of all the stimulus names
+    stimulus_lst = get_stimulus_names(df) # makes a call to get a list of all the stimulus names
 
     for i, _id in enumerate(fish_ids):
-        """TODO: make this part below into a separate function"""
         index = 0
         fish_criteria_dict = {
             "below-upper": True,
