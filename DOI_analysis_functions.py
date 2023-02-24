@@ -53,6 +53,7 @@ def create_newdf(parent_folder):
                             dfs.append(finaldf)
 
     df = pd.concat(dfs, ignore_index=True)
+    print(parent_folder[parent_folder.rfind('\\') + 1:])
     df_path = os.path.join(parent_folder, parent_folder[parent_folder.rfind('\\') + 1:] + '_finaldf.h5')
     df.to_hdf(df_path, 'finaldf', format='table', mode='w')
     print("Experiment dataframe is saved")

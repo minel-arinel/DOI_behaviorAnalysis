@@ -402,7 +402,7 @@ def main(parent_folder, rerun=False):
 
         loc_fish_details = fish_details.replace(':', '.')
 
-        saving_path1 = str(parent_folder) + '\\' + loc_fish_details + '_main_df' + '.h5'
+        saving_path1 = str(parent_folder) + '/' + loc_fish_details + '_main_df' + '.h5'
         #saving_path1 = saving_path1.replace(' ', '_')
         print(saving_path1)
 
