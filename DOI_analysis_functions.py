@@ -358,8 +358,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     ax.set_xticklabels(fish_ids)
     ax.set_xlabel('Fish ID', fontsize='x-large')
 
-    good_fish = []
-    inactive_fish = []
+    usable_fish = []
 
     stimulus_lst = get_stimulus_names(df) # makes a call to get a list of all the stimulus names
 
@@ -391,11 +390,12 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
                         fish_criteria_dict["below-upper"] = False
         criteria_value_lst = list(fish_criteria_dict.values())
         if all(criteria_value_lst):
-            # if all the criteria is met, add fish to good_fish list
-            good_fish.append(_id)
+            # if all the criteria is met, add fish to usable_fish list. True means it is a good fish.
+            usable_fish.append((_id, True))
         elif False in criteria_value_lst and criteria_value_lst[0] is not False:
-            # if not all criteria is met (excluding being over upper bound), add fish to inactive fish
-            inactive_fish.append(_id)
+            # if not all criteria is met (excluding being over upper bound), add fish to usable_fish.
+            # False means it is inactive
+            usable_fish.append((_id, False))
 
         for j, value in enumerate(data_values):
             _x = x[i] - (width / 2) * ((num_bars - 1) - 2 * j)  # x coordinates of individual bars for fish
@@ -424,7 +424,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
     else:
         print('Cannot save figure, level should be "exp" or "conc"')
 
-    return good_fish, inactive_fish
+    return usable_fish
 
     '''below_baseline_habit = np.minimum(np.array(baseline_habits), bout_count_upperthreshold)
         below_baseline_loco = np.minimum(np.array(baseline_locos), bout_count_upperthreshold)
