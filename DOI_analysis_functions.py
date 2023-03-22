@@ -370,7 +370,6 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
             "forward": True,
             "right-left": False
         }
-
         data_values = []
         for condition in df[_id].columns:
             data_values.extend(df[_id][condition].values)
@@ -392,7 +391,7 @@ def barplot_perfish(folder, df, level, DOI_conc=0):
         if all(criteria_value_lst):
             # if all the criteria is met, add fish to usable_fish list. True means it is a good fish.
             usable_fish.append((_id, True))
-        elif False in criteria_value_lst and criteria_value_lst[0] is not False:
+        elif all(criteria_value_lst[:-1]):
             # if not all criteria is met (excluding being over upper bound), add fish to usable_fish.
             # False means it is inactive
             usable_fish.append((_id, False))
