@@ -1,3 +1,11 @@
 id,age,concentration,stimuli,active
-442,6,0,stim,FALSE
-444,6,0,stim,FALSE
+458,6,0,eggH20,True
+460,6,0,eggH20,True
+443,6,50,DOI,True
+445,6,50,DOI,False
+461,6,50,DOI,True
+448,7,0,eggH20,True
+456,7,0,eggH20,True
+447,7,50,DOI,True
+455,7,50,DOI,True
+457,7,50,DOI,True
