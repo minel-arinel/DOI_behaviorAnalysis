@@ -33,6 +33,10 @@ bin_duration = 60  # The duration of each bin for analysis (in sec)
 omr_bin_angle = 3  # The bin width for bout angle histograms (in degrees)
 bout_duration_bin = 0.02  # The duration of each bin for bout duration histograms (in sec)
 
+habit_duration = 300
+baseline_omr_duration = 1320
+treatment_omr_duration = 3965
+
 conditions = ['baseline', 'drugtreated']
 
 
@@ -934,7 +938,9 @@ def plot_distovertime(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    baseline_omr_duration = baseline_omr_duration
+    treatment_omr_duration = drug_loco_duration
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     maxval = 0
@@ -947,7 +953,7 @@ def plot_distovertime(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     ax.legend(loc='upper right')
     if level == 'exp':
@@ -965,7 +971,7 @@ def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     maxval = 0
@@ -985,7 +991,7 @@ def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Normalized Bout Distance (ΔDist/Dist)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     ax.legend(loc='upper right')
     if level == 'exp':
@@ -1002,7 +1008,7 @@ def plot_all_distovertime(folder, alldf):
     # Plot average distance over time per concentration
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     labels = [int(i) for i in alldf.concentration.unique()]
     labels.sort()
 
@@ -1022,7 +1028,7 @@ def plot_all_distovertime(folder, alldf):
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     ax.legend(loc='upper right')
     plt.savefig(os.path.join(folder, 'distovertime_perconc.png'), dpi=300, transparent=False)
@@ -1032,7 +1038,7 @@ def plot_all_distovertime_normalized(folder, alldf):
     # Plot average distance over time per concentration, normalized to average baseline locomotor activity
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     labels = [int(i) for i in alldf.concentration.unique()]
     labels.sort()
     bin_sums = [[[] for _ in range(len(labels))] for _ in range(len(timebins))]
@@ -1058,7 +1064,7 @@ def plot_all_distovertime_normalized(folder, alldf):
     ax.set_ylabel('Normalized Bout Distance (ΔDist/Dist)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     ax.legend(loc='upper right')
     plt.savefig(os.path.join(folder, 'normdistovertime_perconc.png'), dpi=300, transparent=False)
@@ -1122,7 +1128,7 @@ def plot_avgdistovertime(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     bin_sums = [[] for _ in range(len(timebins))]
@@ -1141,7 +1147,7 @@ def plot_avgdistovertime(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Average Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     if level == 'exp':
         plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_avgdistovertime.png'), dpi=300,
@@ -1158,7 +1164,7 @@ def plot_avgdistovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     bin_sums = [[] for _ in range(len(timebins))]
@@ -1184,7 +1190,7 @@ def plot_avgdistovertime_normalized(folder, boutdf, level, DOI_conc=0):
     ax.set_ylabel('Normalized Average Bout Distance (ΔDist/Dist)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_loco_duration, 2 * habit_duration + baseline_loco_duration, color='blue',
+    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
                 alpha=0.2)
     if level == 'exp':
         plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_normavgdistovertime.png'), dpi=300,
@@ -1200,7 +1206,7 @@ def plt_avgperconc(folder, alldf, measure):
     # Plot bar graphs of average measures per condition
     # Measure can be 'dist', 'boutcount', 'thigmotaxis_dist', or 'thigmotaxis_time'
 
-    timebins = np.arange(0, 2 * habit_duration + baseline_loco_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
     concs = [int(i) for i in alldf.concentration.unique()]
     concs.sort()
     labels = ['Baseline; Habituation', 'Baseline; Locomotion', 'DOI treated; Habituation', 'DOI treated; Locomotion']
