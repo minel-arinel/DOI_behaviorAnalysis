@@ -939,7 +939,7 @@ def plot_distovertime(folder, boutdf, level, DOI_conc=0):
 
     fig, ax = plt.subplots(figsize=(20, 5))
     baseline_omr_duration = baseline_omr_duration
-    treatment_omr_duration = drug_loco_duration
+    treatment_omr_duration = treatment_omr_duration
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
@@ -971,7 +971,7 @@ def plot_distovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     maxval = 0
@@ -1008,8 +1008,8 @@ def plot_all_distovertime(folder, alldf):
     # Plot average distance over time per concentration
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
-    labels = [int(i) for i in alldf.concentration.unique()]
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
+    labels = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     labels.sort()
 
     for conc in labels:
@@ -1038,7 +1038,7 @@ def plot_all_distovertime_normalized(folder, alldf):
     # Plot average distance over time per concentration, normalized to average baseline locomotor activity
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = [int(i) for i in alldf.concentration.unique()]
     labels.sort()
     bin_sums = [[[] for _ in range(len(labels))] for _ in range(len(timebins))]
@@ -1128,7 +1128,7 @@ def plot_avgdistovertime(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     bin_sums = [[] for _ in range(len(timebins))]
@@ -1164,7 +1164,7 @@ def plot_avgdistovertime_normalized(folder, boutdf, level, DOI_conc=0):
     # Level can be 'exp' or 'conc'
 
     fig, ax = plt.subplots(figsize=(20, 5))
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = list(boutdf.fish_id.unique())
     labels.sort()
     bin_sums = [[] for _ in range(len(timebins))]
@@ -1206,7 +1206,7 @@ def plt_avgperconc(folder, alldf, measure):
     # Plot bar graphs of average measures per condition
     # Measure can be 'dist', 'boutcount', 'thigmotaxis_dist', or 'thigmotaxis_time'
 
-    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + drug_loco_duration + 1, 60)
+    timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     concs = [int(i) for i in alldf.concentration.unique()]
     concs.sort()
     labels = ['Baseline; Habituation', 'Baseline; Locomotion', 'DOI treated; Habituation', 'DOI treated; Locomotion']
