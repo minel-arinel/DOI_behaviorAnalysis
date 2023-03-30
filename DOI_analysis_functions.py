@@ -1383,3 +1383,24 @@ def plt_avgperconc(folder, alldf, measure):
         return
 
 # def plt_avgperconc_normalized(folder, alldf, measure):
+
+
+def plot_bout_duration_hist(alldf, folder):
+    fig, ax = plt.subplots()
+    labels = ['eggH20 baseline', 'DOI baseline', 'eggH20 drugtested', 'DOI drugtested']
+    conditions = [cond for x in alldf.condition.unique()]
+    colors = ['blue', 'orange']
+    concs = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
+
+    label_ind = 0
+    for i, condition in enumerate(conditions):
+        for conc in concs:
+            subdf = alldf[alldf.concentration == str(conc) + "ugml"]
+            bout_durations = subdf.loc[subdf['condition'] == condition, 'bout_duration']
+            ax.hist(bout_durations, bins=20, alpha=0.5, color=colors[i], label=labels[label_ind])
+            label_ind += 1
+    ax.set_xlabel('Bout Duration (seconds)')
+    ax.set_ylabel('Frequency')
+    ax.legend()
+
+    plt.savefig(os.path.join(folder, "bout_duration_hist.png"), dpi=300, transparent=False)
