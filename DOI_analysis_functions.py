@@ -1206,9 +1206,10 @@ def plt_avgperconc(folder, alldf, measure):
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     concs = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     concs.sort()
-    labels = ['Baseline; EggH20', 'Baseline; DOI', 'Drug Treated; EggH20', 'Drug Treated; DOI']
+    # labels = ['Baseline; EggH20', 'Drug Treated; EggH20', 'Baseline; DOI', 'Drug Treated; DOI']
+    labels = ["Baseline", "Drugtested"]
 
-    x = np.arange(len(labels) * 2, step=2)  # the label locations
+    x = np.arange(len(labels))  # the label locations
     width = 0.35  # the width of the bars
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -1217,10 +1218,10 @@ def plt_avgperconc(folder, alldf, measure):
 
     for i, conc in enumerate(concs):
         subdf = alldf[alldf.concentration == str(conc)+"ugml"]
-        baseline_habits = []
-        baseline_locos = []
-        drug_habits = []
-        drug_locos = []
+        baseline_eggH20 = []
+        baseline_DOI = []
+        drug_eggH20 = []
+        drug_DOI = []
         for fish in subdf.fish_id.unique():
             if 'thigmotaxis' not in measure:
                 inds1 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
@@ -1261,11 +1262,11 @@ def plt_avgperconc(folder, alldf, measure):
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                     return
-                baseline_habits.append(
+                baseline_eggH20.append(
                     np.nan_to_num(np.mean([baseline_eggH20[i] for i in np.nonzero(baseline_eggH20)[0]])))
-                baseline_locos.append(np.nan_to_num(np.mean([baseline_DOI[i] for i in np.nonzero(baseline_DOI)[0]])))
-                drug_habits.append(np.nan_to_num(np.mean([drug_eggH20[i] for i in np.nonzero(drug_eggH20)[0]])))
-                drug_locos.append(np.nan_to_num(np.mean([drug_DOI[i] for i in np.nonzero(drug_DOI)[0]])))
+                baseline_DOI.append(np.nan_to_num(np.mean([baseline_DOI[i] for i in np.nonzero(baseline_DOI)[0]])))
+                drug_eggH20.append(np.nan_to_num(np.mean([drug_eggH20[i] for i in np.nonzero(drug_eggH20)[0]])))
+                drug_DOI.append(np.nan_to_num(np.mean([drug_DOI[i] for i in np.nonzero(drug_DOI)[0]])))
 
             elif 'thigmotaxis' in measure:
                 if measure == 'thigmotaxis_dist':
@@ -1333,19 +1334,19 @@ def plt_avgperconc(folder, alldf, measure):
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                     return
-                baseline_habits.append(np.nan_to_num(baseline_eggH20))
-                baseline_locos.append(np.nan_to_num(baseline_DOI))
-                drug_habits.append(np.nan_to_num(drug_eggH20))
-                drug_locos.append(np.nan_to_num(drug_DOI))
+                baseline_eggH20.append(np.nan_to_num(baseline_eggH20))
+                baseline_DOI.append(np.nan_to_num(baseline_DOI))
+                drug_eggH20.append(np.nan_to_num(drug_eggH20))
+                drug_DOI.append(np.nan_to_num(drug_DOI))
 
             else:
                 print(
                     'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                 return
 
-        conc_vals = [np.mean(baseline_habits), np.mean(baseline_locos), np.mean(drug_habits), np.mean(drug_locos)]
-        rects = ax.bar(x - (width * ((len(concs) - 1) - (2 * i))) / 2, conc_vals, width,
-                       label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
+        conc_vals = [np.mean(baseline_eggH20), np.mean(baseline_DOI), np.mean(drug_eggH20), np.mean(drug_DOI)]
+        ax.bar(x - (width * ((len(concs) - 1) - (i))) / 2, conc_vals, width,
+               label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
 
     ax.legend()
 
