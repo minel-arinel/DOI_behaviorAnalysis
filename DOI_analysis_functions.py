@@ -1011,9 +1011,9 @@ def plot_all_distovertime(folder, alldf):
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     labels.sort()
-
+    print(labels)
     for conc in labels:
-        subdf = alldf[alldf.concentration == str(conc)]
+        subdf = alldf[alldf.concentration == str(conc)+"ugml"]
         bin_sums = [[] for _ in range(len(timebins))]
         for fish in subdf.fish_id.unique():
             inds = np.digitize(subdf[subdf['fish_id'] == fish].cum_bout_start, timebins)
@@ -1039,18 +1039,26 @@ def plot_all_distovertime_normalized(folder, alldf):
 
     fig, ax = plt.subplots(figsize=(20, 5))
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
-    labels = [int(i) for i in alldf.concentration.unique()]
+    labels = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     labels.sort()
+    # print("labels = ", labels)
+    # print("timebins = ",timebins)
     bin_sums = [[[] for _ in range(len(labels))] for _ in range(len(timebins))]
     for i, conc in enumerate(labels):
-        subdf = alldf[alldf.concentration == str(conc)]
+        # print("i = ",i)
+        # print("conc = ",conc)
+        subdf = alldf[alldf.concentration == str(conc)+"ugml"]
+        # print(subdf)
         for fish in subdf.fish_id.unique():
             inds = np.digitize(subdf[subdf['fish_id'] == fish].cum_bout_start, timebins)
-            inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                      (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
+            # inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+            #                           (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
+            inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline')].cum_bout_start, timebins)
             bin_sum = [subdf[subdf['fish_id'] == fish][inds == i].distance.sum() for i in range(len(timebins))]
-            baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                   (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
+            # baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+            #                        (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
+            #                  range(len(timebins))]
+            baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline')][inds2 == i].distance.sum() for i in
                              range(len(timebins))]
             baseline = np.nan_to_num(np.mean([baseline_vals[i] for i in np.nonzero(baseline_vals)[0]]))
             norm_bin_sums = (bin_sum - baseline) / baseline
@@ -1073,6 +1081,8 @@ def plot_all_distovertime_normalized(folder, alldf):
 
 def bin_anova(bin_sums, labels):
     for t in range(len(bin_sums)):
+        print(bin_sums[t])
+        print("\n")
         fvalue, pvalue = stats.f_oneway(bin_sums[t][0], bin_sums[t][1], bin_sums[t][2], bin_sums[t][3], bin_sums[t][4],
                                         bin_sums[t][5])  # CHANGE THIS
         if pvalue < 0.05:
@@ -1207,9 +1217,9 @@ def plt_avgperconc(folder, alldf, measure):
     # Measure can be 'dist', 'boutcount', 'thigmotaxis_dist', or 'thigmotaxis_time'
 
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
-    concs = [int(i) for i in alldf.concentration.unique()]
+    concs = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     concs.sort()
-    labels = ['Baseline; Habituation', 'Baseline; Locomotion', 'DOI treated; Habituation', 'DOI treated; Locomotion']
+    labels = ['Baseline; EggH20', 'Baseline; DOI', 'Drug Treated; EggH20', 'Drug Treated; DOI']
 
     x = np.arange(len(labels) * 2, step=2)  # the label locations
     width = 0.35  # the width of the bars
@@ -1219,7 +1229,7 @@ def plt_avgperconc(folder, alldf, measure):
     ax.set_xticklabels(labels)
 
     for i, conc in enumerate(concs):
-        subdf = alldf[alldf.concentration == str(conc)]
+        subdf = alldf[alldf.concentration == str(conc)+"ugml"]
         baseline_habits = []
         baseline_locos = []
         drug_habits = []
@@ -1227,129 +1237,119 @@ def plt_avgperconc(folder, alldf, measure):
         for fish in subdf.fish_id.unique():
             if 'thigmotaxis' not in measure:
                 inds1 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                          (subdf['stim_name'] == 'habituation')].cum_bout_start, timebins)
+                                          (subdf['concentration'] == '0ugml')].cum_bout_start, timebins)
                 inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                          (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
+                                          (subdf['concentration'] == '50ugml')].cum_bout_start, timebins)
                 inds3 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                          (subdf['stim_name'] == 'habituation')].cum_bout_start, timebins)
+                                          (subdf['concentration'] == '0ugml')].cum_bout_start, timebins)
                 inds4 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                          (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
+                                          (subdf['concentration'] == '50ugml')].cum_bout_start, timebins)
                 if measure == 'dist':
-                    baseline_habit = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                            (subdf['stim_name'] == 'habituation')][inds1 == i].distance.sum() for i in
+                    baseline_eggH20 = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                            (subdf['concentration'] == '0ugml')][inds1 == i].distance.sum() for i in
                                       range(len(timebins))]
-                    baseline_loco = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                           (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
+                    baseline_DOI = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                           (subdf['concentration'] == '50ugml')][inds2 == i].distance.sum() for i in
                                      range(len(timebins))]
-                    drug_habit = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                        (subdf['stim_name'] == 'habituation')][inds3 == i].distance.sum() for i in
+                    drug_eggH20 = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                        (subdf['concentration'] == '0ugml')][inds3 == i].distance.sum() for i in
                                   range(len(timebins))]
-                    drug_loco = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                       (subdf['stim_name'] == 'locomotion')][inds4 == i].distance.sum() for i in
+                    drug_DOI = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                       (subdf['concentration'] == '50ugml')][inds4 == i].distance.sum() for i in
                                  range(len(timebins))]
                 elif measure == 'boutcount':
-                    baseline_habit = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                            (subdf['stim_name'] == 'habituation')][inds1 == i].bout.count() for i in
+                    baseline_eggH20 = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                            (subdf['concentration'] == '0ugml')][inds1 == i].bout.count() for i in
                                       range(len(timebins))]
-                    baseline_loco = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                           (subdf['stim_name'] == 'locomotion')][inds2 == i].bout.count() for i in
+                    baseline_DOI = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                           (subdf['concentration'] == '50ugml')][inds2 == i].bout.count() for i in
                                      range(len(timebins))]
-                    drug_habit = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                        (subdf['stim_name'] == 'habituation')][inds3 == i].bout.count() for i in
+                    drug_eggH20 = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                        (subdf['concentration'] == '0ugml')][inds3 == i].bout.count() for i in
                                   range(len(timebins))]
-                    drug_loco = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                       (subdf['stim_name'] == 'locomotion')][inds4 == i].bout.count() for i in
+                    drug_DOI = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                       (subdf['concentration'] == '50ugml')][inds4 == i].bout.count() for i in
                                  range(len(timebins))]
                 else:
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                     return
                 baseline_habits.append(
-                    np.nan_to_num(np.mean([baseline_habit[i] for i in np.nonzero(baseline_habit)[0]])))
-                baseline_locos.append(np.nan_to_num(np.mean([baseline_loco[i] for i in np.nonzero(baseline_loco)[0]])))
-                drug_habits.append(np.nan_to_num(np.mean([drug_habit[i] for i in np.nonzero(drug_habit)[0]])))
-                drug_locos.append(np.nan_to_num(np.mean([drug_loco[i] for i in np.nonzero(drug_loco)[0]])))
+                    np.nan_to_num(np.mean([baseline_eggH20[i] for i in np.nonzero(baseline_eggH20)[0]])))
+                baseline_locos.append(np.nan_to_num(np.mean([baseline_DOI[i] for i in np.nonzero(baseline_DOI)[0]])))
+                drug_habits.append(np.nan_to_num(np.mean([drug_eggH20[i] for i in np.nonzero(drug_eggH20)[0]])))
+                drug_locos.append(np.nan_to_num(np.mean([drug_DOI[i] for i in np.nonzero(drug_DOI)[0]])))
 
             elif 'thigmotaxis' in measure:
                 if measure == 'thigmotaxis_dist':
-                    baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                  (subdf['stim_name'] == 'habituation') & (
+                    baseline_eggH20 = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                                  (subdf['concentration'] == '0ugml') & (
                                                           subdf['in_center'] == False)].distance.sum()) / (subdf[(
                                                                                                                          subdf[
                                                                                                                              'fish_id'] == fish) & (
                                                                                                                          subdf[
-                                                                                                                             'condition'] == 'baseline') & (
-                                                                                                                         subdf[
-                                                                                                                             'stim_name'] == 'habituation')].distance.sum())
+                                                                                                                             'condition'] == 'baseline')].distance.sum())
 
-                    baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                 (subdf['stim_name'] == 'locomotion') & (
+                    baseline_DOI = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                                 (subdf['concentration'] == '50ugml') & (
                                                          subdf['in_center'] == False)].distance.sum()) / (subdf[(
                                                                                                                         subdf[
                                                                                                                             'fish_id'] == fish) & (
                                                                                                                         subdf[
-                                                                                                                            'condition'] == 'baseline') & (
-                                                                                                                        subdf[
-                                                                                                                            'stim_name'] == 'locomotion')].distance.sum())
+                                                                                                                            'condition'] == 'baseline')].distance.sum())
 
-                    drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                              (subdf['stim_name'] == 'habituation') & (
+                    drug_eggH20 = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                              (subdf['concentration'] == '0ugml') & (
                                                       subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
                                                                                                                   'fish_id'] == fish) & (
                                                                                                                      subdf[
-                                                                                                                         'condition'] == 'drugtreated') & (
-                                                                                                                     subdf[
-                                                                                                                         'stim_name'] == 'habituation')].distance.sum())
+                                                                                                                         'condition'] == 'drugtreated')].distance.sum())
 
-                    drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                             (subdf['stim_name'] == 'locomotion') & (
+                    drug_DOI = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                             (subdf['concentration'] == '50ugml') & (
                                                      subdf['in_center'] == False)].distance.sum()) / (subdf[(subdf[
                                                                                                                  'fish_id'] == fish) & (
                                                                                                                     subdf[
-                                                                                                                        'condition'] == 'drugtreated') & (
-                                                                                                                    subdf[
-                                                                                                                        'stim_name'] == 'locomotion')].distance.sum())
+                                                                                                                        'condition'] == 'drugtreated')].distance.sum())
 
                 elif measure == 'thigmotaxis_time':
-                    baseline_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                  (subdf['stim_name'] == 'habituation') & (
+                    baseline_eggH20 = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                                  (subdf['concentration'] == '0ugml') & (
                                                           subdf['in_center'] == False)].bout_duration.sum()) / (
                                          subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
-                                                 subdf['stim_name'] == 'habituation')].bout_duration.sum())
+                                                 subdf['concentration'] == '0ugml')].bout_duration.sum())
 
-                    baseline_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-                                                 (subdf['stim_name'] == 'locomotion') & (
+                    baseline_DOI = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
+                                                 (subdf['concentration'] == '50ugml') & (
                                                          subdf['in_center'] == False)].bout_duration.sum()) / (
                                         subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') & (
-                                                subdf['stim_name'] == 'locomotion')].bout_duration.sum())
+                                                subdf['concentration'] == '50ugml')].bout_duration.sum())
 
-                    drug_habit = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                              (subdf['stim_name'] == 'habituation') & (
+                    drug_eggH20 = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                              (subdf['concentration'] == '0ugml') & (
                                                       subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
                                                                                                                           subdf[
                                                                                                                               'fish_id'] == fish) & (
                                                                                                                           subdf[
                                                                                                                               'condition'] == 'drugtreated') & (
-                                                                                                                          subdf[
-                                                                                                                              'stim_name'] == 'habituation')].bout_duration.sum())
+                                                                                                                          subdf['concentration'] == '0ugml')].bout_duration.sum())
 
-                    drug_loco = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
-                                             (subdf['stim_name'] == 'locomotion') & (
+                    drug_DOI = 100 * (subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'drugtreated') &
+                                             (subdf['concentration'] == '50ugml') & (
                                                      subdf['in_center'] == False)].bout_duration.sum()) / (subdf[(
                                                                                                                          subdf[
                                                                                                                              'fish_id'] == fish) & (
                                                                                                                          subdf[
                                                                                                                              'condition'] == 'drugtreated') & (
-                                                                                                                         subdf[
-                                                                                                                             'stim_name'] == 'locomotion')].bout_duration.sum())
+                                                                                                                         subdf['concentration'] == '50ugml')].bout_duration.sum())
                 else:
                     print(
                         'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                     return
-                baseline_habits.append(np.nan_to_num(baseline_habit))
-                baseline_locos.append(np.nan_to_num(baseline_loco))
-                drug_habits.append(np.nan_to_num(drug_habit))
-                drug_locos.append(np.nan_to_num(drug_loco))
+                baseline_habits.append(np.nan_to_num(baseline_eggH20))
+                baseline_locos.append(np.nan_to_num(baseline_DOI))
+                drug_habits.append(np.nan_to_num(drug_eggH20))
+                drug_locos.append(np.nan_to_num(drug_DOI))
 
             else:
                 print(
