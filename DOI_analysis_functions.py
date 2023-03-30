@@ -35,6 +35,7 @@ bout_duration_bin = 0.02  # The duration of each bin for bout duration histogram
 
 habit_duration = 300
 baseline_omr_duration = 1320
+total_baseline_omr_duration = habit_duration + baseline_omr_duration
 treatment_omr_duration = 3965
 
 conditions = ['baseline', 'drugtreated']
@@ -1024,13 +1025,11 @@ def plot_all_distovertime(folder, alldf):
         for t in range(len(bin_sums)):
             bin_means.append(np.mean(bin_sums[t]))
         plt.plot(timebins, bin_means, label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
-
+    # aloye come back here
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
-    plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
-                alpha=0.2)
     ax.legend(loc='upper right')
+    plt.axvline(x=total_baseline_omr_duration, color='b', ls='--')
     plt.savefig(os.path.join(folder, 'distovertime_perconc.png'), dpi=300, transparent=False)
 
 
@@ -1041,23 +1040,13 @@ def plot_all_distovertime_normalized(folder, alldf):
     timebins = np.arange(0, 2 * habit_duration + baseline_omr_duration + treatment_omr_duration + 1, 60)
     labels = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
     labels.sort()
-    # print("labels = ", labels)
-    # print("timebins = ",timebins)
     bin_sums = [[[] for _ in range(len(labels))] for _ in range(len(timebins))]
     for i, conc in enumerate(labels):
-        # print("i = ",i)
-        # print("conc = ",conc)
         subdf = alldf[alldf.concentration == str(conc)+"ugml"]
-        # print(subdf)
         for fish in subdf.fish_id.unique():
             inds = np.digitize(subdf[subdf['fish_id'] == fish].cum_bout_start, timebins)
-            # inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-            #                           (subdf['stim_name'] == 'locomotion')].cum_bout_start, timebins)
             inds2 = np.digitize(subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline')].cum_bout_start, timebins)
             bin_sum = [subdf[subdf['fish_id'] == fish][inds == i].distance.sum() for i in range(len(timebins))]
-            # baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline') &
-            #                        (subdf['stim_name'] == 'locomotion')][inds2 == i].distance.sum() for i in
-            #                  range(len(timebins))]
             baseline_vals = [subdf[(subdf['fish_id'] == fish) & (subdf['condition'] == 'baseline')][inds2 == i].distance.sum() for i in
                              range(len(timebins))]
             baseline = np.nan_to_num(np.mean([baseline_vals[i] for i in np.nonzero(baseline_vals)[0]]))
@@ -1067,13 +1056,11 @@ def plot_all_distovertime_normalized(folder, alldf):
         bin_means = []
         for t in range(len(bin_sums)):
             bin_means.append(np.mean(bin_sums[t][i]))
+        plt.axvline(x=total_baseline_omr_duration, color='b', ls='--')
         plt.plot(timebins, bin_means, label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
 
     ax.set_ylabel('Normalized Bout Distance (ΔDist/Dist)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
-    plt.axvspan(0, habit_duration, color='blue', alpha=0.2)
-    plt.axvspan(habit_duration + baseline_omr_duration, 2 * habit_duration + baseline_omr_duration, color='blue',
-                alpha=0.2)
     ax.legend(loc='upper right')
     plt.savefig(os.path.join(folder, 'normdistovertime_perconc.png'), dpi=300, transparent=False)
     return bin_sums
@@ -1386,9 +1373,9 @@ def plt_avgperconc(folder, alldf, measure):
 
 
 def plot_bout_duration_hist(alldf, folder):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(1, 2)
     labels = ['eggH20 baseline', 'DOI baseline', 'eggH20 drugtested', 'DOI drugtested']
-    conditions = [cond for x in alldf.condition.unique()]
+    conditions = [cond for cond in alldf.condition.unique()]
     colors = ['blue', 'orange']
     concs = [int(i[:i.rfind("ugml")]) for i in alldf.concentration.unique()]
 
@@ -1397,8 +1384,11 @@ def plot_bout_duration_hist(alldf, folder):
         for conc in concs:
             subdf = alldf[alldf.concentration == str(conc) + "ugml"]
             bout_durations = subdf.loc[subdf['condition'] == condition, 'bout_duration']
-            ax.hist(bout_durations, bins=20, alpha=0.5, color=colors[i], label=labels[label_ind])
-            label_ind += 1
+            if len(bout_durations) > 0:
+                hist, bins = np.histogram(bout_durations.dropna(), bins=20)
+                width = (bins[1] - bins[0]) / len(labels)
+                ax[i].bar(bins[:-1] + label_ind*width, hist, width=width, alpha=0.5, color=colors[i], label=labels[label_ind])
+                label_ind += 1
     ax.set_xlabel('Bout Duration (seconds)')
     ax.set_ylabel('Frequency')
     ax.legend()
