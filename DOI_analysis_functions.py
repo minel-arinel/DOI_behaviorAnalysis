@@ -1211,11 +1211,13 @@ def plt_avgperconc(folder, alldf, measure):
 
     x = np.arange(len(labels))  # the label locations
     width = 0.35  # the width of the bars
+    dwidth = width/len(labels)
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
 
+    data = []
     for i, conc in enumerate(concs):
         subdf = alldf[alldf.concentration == str(conc)+"ugml"]
         baseline_eggH20 = []
@@ -1343,10 +1345,14 @@ def plt_avgperconc(folder, alldf, measure):
                 print(
                     'Cannot calculate; measure should be "dist", "boutcount", "thigmotaxis_dist", or "thigmotaxis_time"')
                 return
-
         conc_vals = [np.mean(baseline_eggH20), np.mean(baseline_DOI), np.mean(drug_eggH20), np.mean(drug_DOI)]
-        ax.bar(x - (width * ((len(concs) - 1) - (i))) / 2, conc_vals, width,
-               label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
+        data.append([x for x in conc_vals if x != 0.0])
+        print(f"conc: {conc}, conc_vals(eggH20, DOI): {conc_vals}")
+    print(data)
+    for i in range(len(data)):
+        y = [d[i] for d in data]
+        subdf = alldf[alldf.concentration == str(concs[i]) + "ugml"]
+        ax.bar((x + i * dwidth), y, dwidth, label=f'{concs[i]} ug/ml, n={len(subdf.fish_id.unique())}')
 
     ax.legend()
 
