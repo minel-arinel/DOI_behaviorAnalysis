@@ -352,7 +352,7 @@ def generate_fish_histogram(alldf):
     plt.ylabel("Density")
     plt.show()
 
-def plot_concentration_response(alldf):
+def mean_distance_perconc(alldf):
     '''This function plots the mean distance traveled for each of the drug concentrations'''
     concentrations = sorted(alldf['concentration'].unique())
     response_means = []
