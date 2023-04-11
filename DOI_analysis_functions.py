@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import ceil
+from scipy.stats import norm
 
 from scipy.ndimage import gaussian_filter1d
 import scipy.stats as stats
@@ -338,6 +339,18 @@ def get_stimulus_names(df):
 #             inactive_fish.append(_id)
 
 
+def generate_fish_histogram(alldf):
+    sliced_df = alldf[["fish_id", "distance", "condition"]]
+    baseline_distances = sliced_df[sliced_df["condition"] == "baseline"].groupby("fish_id")["distance"].sum()
+    mu, std = np.mean(baseline_distances), np.std(baseline_distances)
+    plt.hist(baseline_distances, bins=10, density=True, alpha=0.5, color='g')
+    xmin, xmax = plt.xlim()
+    x = np.linspace(xmin, xmax, 100)
+    p = norm.pdf(x, mu, std)
+    plt.plot(x, p, 'k', linewidth=2)
+    plt.xlabel("Total distance")
+    plt.ylabel("Density")
+    plt.show()
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
