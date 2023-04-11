@@ -366,6 +366,17 @@ def mean_distance_perconc(alldf):
     plt.ylabel('Distance traveled')
     plt.show()
 
+def bout_duration_histogram(alldf, bout_type='duration'):
+    fig, axs = plt.subplots(1, len(alldf['condition'].unique()), sharey=True)
+    for i, cond in enumerate(sorted(alldf['condition'].unique())):
+        subset = alldf[alldf['condition'] == cond]
+        axs[i].hist(subset[bout_type], bins=20)
+        axs[i].set_xlabel(bout_type)
+        axs[i].set_title(cond)
+    axs[0].set_ylabel('Frequency')
+    plt.suptitle('Bout ' + bout_type + ' distribution')
+    plt.show()
+
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
