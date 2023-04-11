@@ -352,6 +352,21 @@ def generate_fish_histogram(alldf):
     plt.ylabel("Density")
     plt.show()
 
+def plot_concentration_response(alldf):
+    '''This function plots the mean distance traveled for each of the drug concentrations'''
+    concentrations = sorted(alldf['concentration'].unique())
+    response_means = []
+    response_stderrs = []
+    for conc in concentrations:
+        subset = alldf[alldf['concentration'] == conc]
+        response_means.append(subset['distance'].mean())
+        response_stderrs.append(subset['distance'].sem())
+    plt.errorbar(concentrations, response_means, yerr=response_stderrs, fmt='o-', capsize=5)
+    plt.xlabel('Concentration')
+    plt.ylabel('Distance traveled')
+    plt.show()
+
+
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
     # Measure can be 'distance' or 'boutcount'
