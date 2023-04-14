@@ -366,17 +366,20 @@ def mean_distance_perconc(alldf):
     plt.ylabel('Distance traveled')
     plt.show()
 
-def bout_duration_histogram(alldf, bout_type='duration'):
-    fig, axs = plt.subplots(1, len(alldf['condition'].unique()), sharey=True)
-    for i, cond in enumerate(sorted(alldf['condition'].unique())):
-        subset = alldf[alldf['condition'] == cond]
-        axs[i].hist(subset[bout_type], bins=20)
-        axs[i].set_xlabel(bout_type)
-        axs[i].set_title(cond)
-    axs[0].set_ylabel('Frequency')
-    plt.suptitle('Bout ' + bout_type + ' distribution')
+def bout_duration_histogram(alldf, bout_type='bout_duration'):
+    unique_concentrations = sorted(alldf['concentration'].unique())
+    fig, axs = plt.subplots(len(unique_concentrations), len(alldf['condition'].unique()),
+                            sharey=True, figsize=(10, 6))
+    for i, conc in enumerate(unique_concentrations):
+        for j, cond in enumerate(sorted(alldf['condition'].unique())):
+            subset = alldf[(alldf['condition'] == cond) & (alldf['concentration'] == conc)]
+            axs[i][j].hist(subset[bout_type], bins=20)
+            axs[i][j].set_xlabel(bout_type)
+            if i == 0:
+                axs[i][j].set_title(cond)
+            if j == 0:
+                axs[i][j].set_ylabel(f'{conc} concentration')
     plt.show()
-
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
     # Plot bar graphs of values in a df per fish
