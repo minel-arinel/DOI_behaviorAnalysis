@@ -366,7 +366,7 @@ def mean_distance_perconc(alldf):
     plt.ylabel('Distance traveled')
     plt.show()
 
-def bout_duration_histogram(alldf, bout_type='duration'):
+def bout_duration_histogram(alldf, bout_type='bout_duration'):
     fig, axs = plt.subplots(1, len(alldf['condition'].unique()), sharey=True)
     for i, cond in enumerate(sorted(alldf['condition'].unique())):
         subset = alldf[alldf['condition'] == cond]
@@ -375,6 +375,38 @@ def bout_duration_histogram(alldf, bout_type='duration'):
         axs[i].set_title(cond)
     axs[0].set_ylabel('Frequency')
     plt.suptitle('Bout ' + bout_type + ' distribution')
+    plt.show()
+
+def plot_stimulus_heatmap(alldf):
+    pivot = alldf.pivot_table(values='distance', index='stim_name', columns='concentration', aggfunc='mean')
+    sns.heatmap(pivot, cmap='YlGnBu')
+    plt.xlabel('Concentration')
+    plt.ylabel('Stimulus')
+    plt.title('Stimulus-specific effects')
+    plt.show()
+
+def plot_distance_scatter(alldf):
+    sns.scatterplot(x='dist_from_center', y='distance', data=alldf, hue='condition', style='concentration')
+    plt.xlabel('Distance from center')
+    plt.ylabel('Distance traveled')
+    plt.title('Distance from center effects')
+    plt.show()
+
+def plot_dose_response(alldf):
+    # Calculate mean and standard deviation for each concentration
+    summary = alldf.groupby('concentration').agg({'distance': ['mean', 'std']})
+    summary.columns = ['_'.join(col) for col in summary.columns]
+    summary.reset_index(inplace=True)
+    # Create dose-response curve
+    sns.lineplot(x='concentration', y='distance_mean', data=summary)
+    plt.fill_between(summary['concentration'],
+                     summary['distance_mean'] - summary['distance_std'],
+                     summary['distance_mean'] + summary['distance_std'], alpha=0.3)
+    # Format plot
+    plt.xscale('log')
+    plt.xlabel('Concentration (log M)')
+    plt.ylabel('Distance traveled')
+    plt.title('Dose-response curve')
     plt.show()
 
 
