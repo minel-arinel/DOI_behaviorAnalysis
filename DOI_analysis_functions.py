@@ -353,18 +353,25 @@ def generate_fish_histogram(alldf):
     plt.show()
 
 def mean_distance_perconc(alldf):
-    '''This function plots the mean distance traveled for each of the drug concentrations'''
+    '''This function plots the mean distance traveled for each of the drug concentrations, separated by condition'''
+    conditions = sorted(alldf['condition'].unique())
     concentrations = sorted(alldf['concentration'].unique())
-    response_means = []
-    response_stderrs = []
-    for conc in concentrations:
-        subset = alldf[alldf['concentration'] == conc]
-        response_means.append(subset['distance'].mean())
-        response_stderrs.append(subset['distance'].sem())
-    plt.errorbar(concentrations, response_means, yerr=response_stderrs, fmt='o-', capsize=5)
-    plt.xlabel('Concentration')
-    plt.ylabel('Distance traveled')
+    fig, ax = plt.subplots(len(conditions), 1, figsize=(8, 6), sharex=True, sharey=True)
+    for i, condition in enumerate(conditions):
+        subset = alldf[alldf['condition'] == condition]
+        for conc in concentrations:
+            conc_subset = subset[subset['concentration'] == conc]
+            response_mean = conc_subset['distance']
+            response_stderr = conc_subset['distance']
+            ax[i].plot(conc, response_mean, 'o-', label=f'{conc}ug/ml', markersize=5)
+            ax[i].fill_between([conc], response_mean-response_stderr, response_mean+response_stderr, alpha=0.3)
+        ax[i].set_xlabel('Concentration')
+        ax[i].set_ylabel('Distance traveled')
+        ax[i].set_title(condition)
+        ax[i].legend(loc='upper left')
+    plt.tight_layout()
     plt.show()
+
 
 def bout_duration_histogram(alldf, bout_type='bout_duration'):
     unique_concentrations = sorted(alldf['concentration'].unique())
@@ -389,29 +396,6 @@ def plot_stimulus_heatmap(alldf):
     plt.title('Stimulus-specific effects')
     plt.show()
 
-def plot_distance_scatter(alldf):
-    sns.scatterplot(x='dist_from_center', y='distance', data=alldf, hue='condition', style='concentration')
-    plt.xlabel('Distance from center')
-    plt.ylabel('Distance traveled')
-    plt.title('Distance from center effects')
-    plt.show()
-
-def plot_dose_response(alldf):
-    # Calculate mean and standard deviation for each concentration
-    summary = alldf.groupby('concentration').agg({'distance': ['mean', 'std']})
-    summary.columns = ['_'.join(col) for col in summary.columns]
-    summary.reset_index(inplace=True)
-    # Create dose-response curve
-    sns.lineplot(x='concentration', y='distance_mean', data=summary)
-    plt.fill_between(summary['concentration'],
-                     summary['distance_mean'] - summary['distance_std'],
-                     summary['distance_mean'] + summary['distance_std'], alpha=0.3)
-    # Format plot
-    plt.xscale('log')
-    plt.xlabel('Concentration (log M)')
-    plt.ylabel('Distance traveled')
-    plt.title('Dose-response curve')
-    plt.show()
 
 
 def barplot_perfish(folder, df, level, DOI_conc=0):
