@@ -2,10 +2,11 @@ import numpy as np
 import os
 import pandas as pd
 from pathlib import Path
+from utils import convert_wells_to_indices
 
 
 class MCAM:
-    def __init__(self, folder_path, prefix='EK', concentrations=[0], conc_orientation='cols'):
+    def __init__(self, folder_path, prefix='EK', concentrations=[0], conc_orientation='cols', remove_wells=dict()):
         self.folder_path = folder_path
         self.concentrations = concentrations
         self.stim_df = None
@@ -15,7 +16,7 @@ class MCAM:
         self.process_filestructure()
 
         if len(self.dataframes) == 0:
-            self.combine_dataframes(prefix, concentrations, conc_orientation)
+            self.combine_dataframes(prefix, concentrations, conc_orientation, remove_wells)
 
     def process_filestructure(self):
         '''Creates a data_paths attribute with the paths to different files'''
@@ -26,6 +27,8 @@ class MCAM:
                     self.data_paths['stim_df'] = Path(entry.path)
                 elif entry.name == 'csv_files':
                     self.data_paths['csv_files'] = Path(entry.path)
+                elif entry.name == 'figures':
+                    self.data_paths['figures'] = Path(entry.path)
 
         if 'csv_files' in self.data_paths:
             with os.scandir(self.data_paths['csv_files']) as entries:
@@ -43,7 +46,7 @@ class MCAM:
                     self.dataframes[condition][metric][concentration] = pd.read_csv(entry.path, index_col=0)
                     print(f'found {entry.path}')
 
-    def combine_dataframes(self, prefix, concentrations, conc_orientation):
+    def combine_dataframes(self, prefix, concentrations, conc_orientation, remove_wells):
         '''Processes individual dataframes and combines to one'''
         if conc_orientation != 'cols' and conc_orientation != 'rows':
             raise ValueError('conc_orientation can be either \'rows\' or \'cols\'')
@@ -72,9 +75,18 @@ class MCAM:
             for entry in entries:
                 if os.path.isdir(entry.path) and entry.name.startswith(prefix):
 
+                    remove = False
+                    if entry.name in remove_wells:
+                        remove = True
+
                     with os.scandir(entry.path) as subentries:
                         for subentry in subentries:
                             if os.path.isdir(subentry.path):
+
+                                remove_well_inds = list()
+                                if remove and subentry.name in remove_wells[entry.name]:
+                                    remove_well_inds = convert_wells_to_indices(remove_wells[entry.name][subentry.name])
+
                                 dist_traveled_path = os.path.join(subentry.path, 'results', 'distance_traveled_metrics.csv')
                                 tracking_path = os.path.join(subentry.path, 'results', 'tracking_data.csv')
 
@@ -98,33 +110,41 @@ class MCAM:
                                         self.dataframes[subentry.name]['tracking'][conc] = list()
 
                                         if conc_orientation == 'cols':
-                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, np.r_[0, well_inds+i]])
+                                            dist_ind_arr = np.array([ind for ind in np.r_[0, well_inds+i] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
 
-                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, np.r_[0, well_inds+i, well_inds+i+24]])
+                                            track_ind_arr = np.array([ind for ind in np.r_[0, well_inds+i, well_inds+i+24] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
 
                                         elif conc_orientation == 'rows':
                                             start_well = (i*wells_per_conc)+1
                                             end_well = start_well + wells_per_conc
 
-                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, np.r_[0, start_well:end_well]])
+                                            dist_ind_arr = np.array([ind for ind in np.r_[0, start_well:end_well] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
 
-                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, np.r_[0, start_well:end_well, start_well+24:end_well+24]])
+                                            track_ind_arr = np.array([ind for ind in np.r_[0, start_well:end_well, start_well+24:end_well+24] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
 
                                 else:
                                     for i, conc in enumerate(concentrations):
 
                                         if conc_orientation == 'cols':
-                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, np.r_[well_inds+i]])
+                                            dist_ind_arr = np.array([ind for ind in np.r_[well_inds+i] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
 
-                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, np.r_[well_inds+i, well_inds+i+24]])
+                                            track_ind_arr = np.array([ind for ind in np.r_[well_inds+i, well_inds+i+24] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
 
                                         elif conc_orientation == 'rows':
                                             start_well = (i*wells_per_conc)+1
                                             end_well = start_well + wells_per_conc
 
-                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, np.r_[start_well:end_well]])
+                                            dist_ind_arr = np.array([ind for ind in np.r_[start_well:end_well] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
 
-                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, np.r_[start_well:end_well, start_well+24:end_well+24]])
+                                            track_ind_arr = np.array([ind for ind in np.r_[start_well:end_well, start_well+24:end_well+24] if ind not in remove_well_inds])
+                                            self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
 
                                 print(f'processed {entry.name} - {subentry.name}')
 
@@ -132,8 +152,30 @@ class MCAM:
             for metric in self.dataframes[condition]:
                 for concentration in self.dataframes[condition][metric]:
                     dfs = self.dataframes[condition][metric][concentration]
-                    dfs.append(self.stim_df)
                     final_df = pd.concat(dfs, axis=1)
+
+                    if metric == 'distance':
+                        final_df['average_dist'] = final_df.iloc[:, 1:].mean(axis=1)
+                        final_df['sem'] = final_df.iloc[:, 1:].sem(axis=1)
+                    elif metric == 'tracking':
+                        n_fish = len(final_df['center_y'].columns)
+                        final_df[['dist_from_center']+[f'dist_from_center.{i}' for i in range(1, n_fish)]] = 0
+
+                        x = final_df['center_x'].copy()
+                        y = final_df['center_y'].copy()
+
+                        for i, row in final_df.iterrows():
+                            for j in range(n_fish):
+                                if j == 0:
+                                    final_df.loc[i, 'dist_from_center'] = np.linalg.norm((x.iloc[j, i], y.iloc[j, i]))
+                                else:
+                                    final_df.loc[i, f'dist_from_center.{j}'] = np.linalg.norm((x.iloc[j, i], y.iloc[j, i]))
+
+                        dist_cols = [col for col in final_df if col.startswith('dist_from_center')]
+                        final_df['average_dist_from_center'] = final_df[dist_cols].mean(axis=1)
+                        final_df['sem'] = final_df[dist_cols].sem(axis=1)
+
+                    final_df = pd.concat([final_df, self.stim_df], axis=1)
 
                     csv_files_path = os.path.join(self.folder_path, 'csv_files')
                     if not os.path.exists(csv_files_path):
