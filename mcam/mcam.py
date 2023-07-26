@@ -94,8 +94,9 @@ class MCAM:
                                     stimulus_path = os.path.join(subentry.path, 'results', 'stimulus_metadata.csv')
                                     self.create_stim_df(stimulus_path)
 
-                                dist_traveled_df = pd.read_csv(dist_traveled_path, header=9).set_axis(dist_traveled_cols, axis='columns')
-                                dist_traveled_df = dist_traveled_df[['time', 'distance_traveled']]
+                                dist_traveled_metrics = pd.read_csv(dist_traveled_path, header=9).set_axis(dist_traveled_cols, axis='columns')
+                                dist_traveled_df = dist_traveled_metrics[['time', 'distance_traveled']]
+                                speed_df = dist_traveled_metrics[['time', 'speed']]
 
                                 tracking_df = pd.read_csv(tracking_path, header=10).set_axis(tracking_cols, axis='columns')
                                 tracking_df = tracking_df[['time', 'center_y', 'center_x']]
@@ -103,15 +104,18 @@ class MCAM:
                                 if subentry.name not in self.dataframes.keys():
                                     self.dataframes[subentry.name] = dict()
                                     self.dataframes[subentry.name]['distance'] = dict()
+                                    self.dataframes[subentry.name]['speed'] = dict()
                                     self.dataframes[subentry.name]['tracking'] = dict()
 
                                     for i, conc in enumerate(concentrations):
                                         self.dataframes[subentry.name]['distance'][conc] = list()
+                                        self.dataframes[subentry.name]['speed'][conc] = list()
                                         self.dataframes[subentry.name]['tracking'][conc] = list()
 
                                         if conc_orientation == 'cols':
                                             dist_ind_arr = np.array([ind for ind in np.r_[0, well_inds+i] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
+                                            self.dataframes[subentry.name]['speed'][conc].append(speed_df.iloc[:, dist_ind_arr])
 
                                             track_ind_arr = np.array([ind for ind in np.r_[0, well_inds+i, well_inds+i+24] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
@@ -122,6 +126,7 @@ class MCAM:
 
                                             dist_ind_arr = np.array([ind for ind in np.r_[0, start_well:end_well] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
+                                            self.dataframes[subentry.name]['speed'][conc].append(speed_df.iloc[:, dist_ind_arr])
 
                                             track_ind_arr = np.array([ind for ind in np.r_[0, start_well:end_well, start_well+24:end_well+24] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
@@ -132,6 +137,7 @@ class MCAM:
                                         if conc_orientation == 'cols':
                                             dist_ind_arr = np.array([ind for ind in np.r_[well_inds+i] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
+                                            self.dataframes[subentry.name]['speed'][conc].append(speed_df.iloc[:, dist_ind_arr])
 
                                             track_ind_arr = np.array([ind for ind in np.r_[well_inds+i, well_inds+i+24] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
@@ -142,6 +148,7 @@ class MCAM:
 
                                             dist_ind_arr = np.array([ind for ind in np.r_[start_well:end_well] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['distance'][conc].append(dist_traveled_df.iloc[:, dist_ind_arr])
+                                            self.dataframes[subentry.name]['speed'][conc].append(speed_df.iloc[:, dist_ind_arr])
 
                                             track_ind_arr = np.array([ind for ind in np.r_[start_well:end_well, start_well+24:end_well+24] if ind not in remove_well_inds])
                                             self.dataframes[subentry.name]['tracking'][conc].append(tracking_df.iloc[:, track_ind_arr])
@@ -157,6 +164,9 @@ class MCAM:
                     if metric == 'distance':
                         final_df['average_dist'] = final_df.iloc[:, 1:].mean(axis=1)
                         final_df['sem'] = final_df.iloc[:, 1:].sem(axis=1)
+                    elif metric == 'speed':
+                        final_df['average_speed'] = final_df.iloc[:, 1:].mean(axis=1)
+                        final_df['sem'] = final_df.iloc[:, 1:].sem(axis=1)
                     elif metric == 'tracking':
                         n_fish = len(final_df['center_y'].columns)
                         final_df[['dist_from_center']+[f'dist_from_center.{i}' for i in range(1, n_fish)]] = 0
@@ -167,9 +177,9 @@ class MCAM:
                         for i, row in final_df.iterrows():
                             for j in range(n_fish):
                                 if j == 0:
-                                    final_df.loc[i, 'dist_from_center'] = np.linalg.norm((x.iloc[j, i], y.iloc[j, i]))
+                                    final_df.loc[i, 'dist_from_center'] = np.linalg.norm((x.iloc[i, j], y.iloc[i, j]))
                                 else:
-                                    final_df.loc[i, f'dist_from_center.{j}'] = np.linalg.norm((x.iloc[j, i], y.iloc[j, i]))
+                                    final_df.loc[i, f'dist_from_center.{j}'] = np.linalg.norm((x.iloc[i, j], y.iloc[i, j]))
 
                         dist_cols = [col for col in final_df if col.startswith('dist_from_center')]
                         final_df['average_dist_from_center'] = final_df[dist_cols].mean(axis=1)
