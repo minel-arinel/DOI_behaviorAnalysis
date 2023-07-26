@@ -22,15 +22,12 @@ def save_figure(mcam, fig, fig_name):
 
 def color_palette():
     colors = {
-        'copper': '#c84e00',
-        'persimmon': '#e89923',
-        'dandelion': '#ffd960',
-        'piedmont': '#a1b70d',
-        'eno': '#339898',
-        'magnolia': '#1d6363',
-        'prussian_blue': '#005587',
-        'shale_blue': '#0577B1',
-        'ironweed': '993399',
+        50: {'baseline': '#AA6BAA', 'drugtreated': '#993399', '24hour_recovery': '#662266'},
+        5: {'baseline': '#D0763E', 'drugtreated': '#C84E00', '24hour_recovery': '#943900'},
+        2.5: {'baseline': '#ECB86A', 'drugtreated': '#E89923', '24hour_recovery': '#B5771B'},
+        0.5: {'baseline': '#B3C348', 'drugtreated': '#A1B70D', '24hour_recovery': '#748509'},
+        0.05: {'baseline': '#2F739B', 'drugtreated': '#005587', '24hour_recovery': '#003554'},
+        0: {'baseline': '#6DAAAA', 'drugtreated': '#339898', '24hour_recovery': '#236666'},
     }
     return colors
 
@@ -134,6 +131,78 @@ def plot_distance_per_condition(mcam, conditions=list(), concentrations=list(), 
             save_figure(mcam, fig, f'distance_per_condition_timebin{time_bin}s.pdf')
 
 
+def plot_single_distance_per_condition(mcam, normalize=False, conditions=list(), concentrations=list(), savefig=True, time_bin=0, force_add_bins=False):
+    '''Plots distance over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(conditions), figsize=(25, (10*len(conditions))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, condition in enumerate(conditions):
+        for conc in concentrations:
+
+            df = mcam.dataframes[condition]['distance'][conc]
+
+            cols = [col for col in df if col.startswith('distance_traveled')]
+            n_fish = len(cols)
+
+            dists = list()
+
+            if normalize:
+                baseline_df = mcam.dataframes['baseline']['distance'][conc]
+                baseline_df = baseline_df[baseline_df.stim_name == 'locomotor']
+                if time_bin != 0:
+                    baseline_df = baseline_df.groupby(['binned_time']).sum()
+
+            if time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+                df = df.groupby(['binned_time']).sum()
+                x = df.index.values
+            else:
+                x = df.iloc[:, 0]
+
+            for fish in cols:
+                if normalize:
+                    baseline_dist = baseline_df[fish].mean()
+                    y = df[fish]-baseline_dist
+                else:
+                    y = df[fish]
+
+                axs[i].plot(x, y, alpha=0.25, color=colors[conc]['drugtreated'])
+                dists.append(y)
+
+            mean = np.array(dists).mean(axis=0)
+            err = sem(np.array(dists), axis=0)
+
+            axs[i].plot(x, mean, label=f'{str(conc)}, n={n_fish}', linewidth=2, zorder=10, color=colors[conc]['drugtreated'])
+            axs[i].fill_between(x, mean-err, mean+err, alpha=0.5, zorder=10, color=colors[conc]['drugtreated'])
+
+        axs[i].set_title(condition, fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Distance traveled (m)', fontsize=18)
+
+    if savefig:
+        filename = 'single_distance_per_condition'
+        if time_bin != 0:
+            filename += f'_timebin{time_bin}s'
+        if normalize:
+            filename += f'_normalized'
+        save_figure(mcam, fig, filename + '.pdf')
+
+
 def plot_distance_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False):
     '''Plots distance over time of given conditions and concentrations'''
 
@@ -190,6 +259,77 @@ def plot_distance_per_concentration(mcam, conditions=list(), concentrations=list
             save_figure(mcam, fig, f'distance_per_concentration_rolling{rolling_window}.pdf')
         elif time_bin != 0:
             save_figure(mcam, fig, f'distance_per_concentration_timebin{time_bin}s.pdf')
+
+
+def plot_single_distance_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False, normalize=False):
+    '''Plots distance over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(concentrations), figsize=(25, (10*len(concentrations))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, conc in enumerate(concentrations):
+        for condition in conditions:
+            df = mcam.dataframes[condition]['distance'][conc]
+
+            cols = [col for col in df if col.startswith('distance_traveled')]
+            n_fish = len(cols)
+
+            dists = list()
+
+            if normalize:
+                baseline_df = mcam.dataframes['baseline']['distance'][conc]
+                baseline_df = baseline_df[baseline_df.stim_name == 'locomotor']
+                if time_bin != 0:
+                    baseline_df = baseline_df.groupby(['binned_time']).sum()
+
+            if time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+                df = df.groupby(['binned_time']).sum()
+                x = df.index.values
+            else:
+                x = df.iloc[:, 0]
+
+            for fish in cols:
+                if normalize:
+                    baseline_dist = baseline_df[fish].mean()
+                    y = df[fish]-baseline_dist
+                else:
+                    y = df[fish]
+
+                axs[i].plot(x, y, alpha=0.25, color=colors[conc][condition])
+                dists.append(y)
+
+            mean = np.array(dists).mean(axis=0)
+            err = sem(np.array(dists), axis=0)
+
+            axs[i].plot(x, mean, label=f'{condition}, n={n_fish}', linewidth=2, zorder=10, color=colors[conc][condition])
+            axs[i].fill_between(x, mean-err, mean+err, alpha=0.5, zorder=10, color=colors[conc][condition])
+
+        axs[i].set_title(str(conc), fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Distance traveled (m)', fontsize=18)
+
+    if savefig:
+        filename = 'single_distance_per_concentration'
+        if time_bin != 0:
+            filename += f'_timebin{time_bin}s'
+        if normalize:
+            filename += f'_normalized'
+        save_figure(mcam, fig, filename + '.pdf')
 
 
 def plot_survival(mcam, savefig=True):
@@ -339,7 +479,7 @@ def plot_stimulus_distance_per_concentration(mcam, stim_name, stim_num, gap=0, c
         save_figure(mcam, fig, f'{stim_name}_{stim_num[0]}_{stim_num[-1]}_distance_per_concentration.pdf')
 
 
-def plot_thigmotaxis_per_condition(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0):
+def plot_thigmotaxis_per_condition(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False):
     '''Plots distance from center over time of given conditions and concentrations'''
 
     if len(conditions) == 0:
@@ -348,7 +488,11 @@ def plot_thigmotaxis_per_condition(mcam, conditions=list(), concentrations=list(
     if len(concentrations) == 0:
         concentrations = mcam.concentrations
 
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
     fig, axs = plt.subplots(len(conditions), figsize=(25, (10*len(conditions))), sharey=True, sharex=True)
+    colors = color_palette()
 
     for i, condition in enumerate(conditions):
         dfs = mcam.dataframes[condition]['tracking']
@@ -356,20 +500,30 @@ def plot_thigmotaxis_per_condition(mcam, conditions=list(), concentrations=list(
         for conc in concentrations:
             df = dfs[conc]
 
-            x = df.iloc[:, 0]
+            cols = [col for col in df if col.startswith('dist_from_center')]
+            n_fish = len(cols)
 
             if rolling_window != 0:
+                x = df.iloc[:, 0]
                 y = df['average_dist_from_center'].rolling(rolling_window, center=True, min_periods=0).mean()
                 err = df['average_dist_from_center'].rolling(rolling_window, center=True, min_periods=0).sem()
+
+            elif time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+
+                grouped_df = df.groupby(['binned_time']).mean()
+                x = grouped_df.index.values
+                y = grouped_df[cols].mean(axis=1)
+                err = grouped_df[cols].sem(axis=1)
+
             else:
+                x = df.iloc[:, 0]
                 y = df['average_dist_from_center']
                 err = df['sem']
 
-            cols = [col for col in df if col.startswith('center_y')]
-            n_fish = len(cols)
-
-            axs[i].plot(x, y, label=f'{str(conc)}, n={n_fish}')
-            axs[i].fill_between(x, y-err, y+err, alpha=0.5)
+            axs[i].plot(x, y, label=f'{str(conc)}, n={n_fish}', color=colors[conc]['drugtreated'])
+            axs[i].fill_between(x, y-err, y+err, alpha=0.5, color=colors[conc]['drugtreated'])
 
         axs[i].set_title(condition, fontsize=18)
         axs[i].legend()
@@ -380,10 +534,13 @@ def plot_thigmotaxis_per_condition(mcam, conditions=list(), concentrations=list(
     fig.supylabel('Distance from center (m)', fontsize=18)
 
     if savefig:
-        save_figure(mcam, fig, f'distance_from_center_per_condition_rolling{rolling_window}.pdf')
+        if rolling_window != 0:
+            save_figure(mcam, fig, f'distance_from_center_per_condition_rolling{rolling_window}.pdf')
+        elif time_bin != 0:
+            save_figure(mcam, fig, f'distance_from_center_per_condition_timebin{time_bin}s.pdf')
 
 
-def plot_thigmotaxis_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0):
+def plot_thigmotaxis_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False):
     '''Plots distance from center over time of given conditions and concentrations'''
 
     if len(conditions) == 0:
@@ -392,26 +549,40 @@ def plot_thigmotaxis_per_concentration(mcam, conditions=list(), concentrations=l
     if len(concentrations) == 0:
         concentrations = mcam.concentrations
 
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
     fig, axs = plt.subplots(len(concentrations), figsize=(25, (10*len(concentrations))), sharey=True, sharex=True)
+    colors = color_palette()
 
     for i, conc in enumerate(concentrations):
         for condition in conditions:
             df = mcam.dataframes[condition]['tracking'][conc]
+
+            cols = [col for col in df if col.startswith('dist_from_center')]
+            n_fish = len(cols)
 
             x = df.iloc[:, 0]
 
             if rolling_window != 0:
                 y = df['average_dist_from_center'].rolling(rolling_window, center=True, min_periods=0).mean()
                 err = df['average_dist_from_center'].rolling(rolling_window, center=True, min_periods=0).sem()
+
+            elif time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+
+                grouped_df = df.groupby(['binned_time']).mean()
+                x = grouped_df.index.values
+                y = grouped_df[cols].mean(axis=1)
+                err = grouped_df[cols].sem(axis=1)
+
             else:
                 y = df['average_dist_from_center']
                 err = df['sem']
 
-            cols = [col for col in df if col.startswith('center_y')]
-            n_fish = len(cols)
-
-            axs[i].plot(x, y, label=f'{condition}, n={n_fish}')
-            axs[i].fill_between(x, y-err, y+err, alpha=0.5)
+            axs[i].plot(x, y, label=f'{condition}, n={n_fish}', color=colors[conc][condition])
+            axs[i].fill_between(x, y-err, y+err, alpha=0.5, color=colors[conc][condition])
 
         axs[i].set_title(str(conc), fontsize=18)
         axs[i].legend()
@@ -422,7 +593,10 @@ def plot_thigmotaxis_per_concentration(mcam, conditions=list(), concentrations=l
     fig.supylabel('Distance from center (m)', fontsize=18)
 
     if savefig:
-        save_figure(mcam, fig, f'distance_from_center_per_concentration_rolling{rolling_window}.pdf')
+        if rolling_window != 0:
+            save_figure(mcam, fig, f'distance_from_center_per_concentration_rolling{rolling_window}.pdf')
+        elif time_bin != 0:
+            save_figure(mcam, fig, f'distance_from_center_per_concentration_timebin{time_bin}s.pdf')
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -759,12 +933,15 @@ def photomotor_aggregates(mcam, conditions=list(), concentrations=list(), savefi
         save_figure(mcam, fig, 'photomotor_aggregates.pdf')
 
 
-def photomotor_aggregates_stim_repetition(mcam, conditions=list(), concentrations=list(), savefig=True):
+def photomotor_aggregates_stim_repetition(mcam, normalize=None, conditions=list(), concentrations=list(), savefig=True):
     '''
     Aggregates the distance data per 5 minute epoch and plots line for each fish.
     Each fish is colored by concentration.
     x-axis is condition, with each stimulus repetition grouped together.
     '''
+
+    if normalize is not None and normalize not in ['difference', 'ratio', 'percent']:
+        raise ValueError('normalize must be \'difference\' for d-b, \'ratio\' for d/b, or \'percent\' for (d-b)/b')
 
     if len(conditions) == 0:
         conditions = list(mcam.dataframes.keys())
@@ -780,14 +957,6 @@ def photomotor_aggregates_stim_repetition(mcam, conditions=list(), concentration
 
     fig, axs = plt.subplots(len(stimuli), 1, figsize=(25, 10*len(stimuli)), sharey=True)
     colors = color_palette()
-    conc_colors = {
-        0: 'eno',
-        0.05: 'shale_blue',
-        0.5: 'prussian_blue',
-        2.5: 'piedmont',
-        5: 'persimmon',
-        50: 'copper'
-    }
 
     for i, stim in enumerate(stimuli):
         repetitions = [key for key in starts_stops if key.startswith(stim)]
@@ -801,6 +970,7 @@ def photomotor_aggregates_stim_repetition(mcam, conditions=list(), concentration
                 for fish in df:
                     if fish.startswith('distance_traveled'):
                         fishdf = df.loc[:, fish]
+
                         fish_dists = list()
                         offsets = list()
 
@@ -812,11 +982,20 @@ def photomotor_aggregates_stim_repetition(mcam, conditions=list(), concentration
                             offsets.append(width * multiplier)
                             multiplier += 1
 
+                        if normalize is not None:
+                            baseline_dist = mcam.dataframes['baseline']['distance'][conc].loc[starts_stops['locomotor'][0]:starts_stops['locomotor'][1], fish].sum()
+                            if normalize == 'difference':
+                                fish_dists = np.array(fish_dists) - baseline_dist
+                            elif normalize == 'ratio':
+                                fish_dists = np.array(fish_dists) / baseline_dist
+                            elif normalize == 'percent':
+                                fish_dists = (np.array(fish_dists) - baseline_dist) / baseline_dist
+
                         all_fish.append(fish_dists)
-                        axs[i].plot(np.array(offsets) + x[j], fish_dists, color=colors[conc_colors[conc]], alpha=0.25)
+                        axs[i].plot(np.array(offsets) + x[j], fish_dists, color=colors[conc]['drugtreated'], alpha=0.25)
 
                 means = np.array(all_fish).mean(axis=0)
-                axs[i].plot(np.array(offsets) + x[j], means, color=colors[conc_colors[conc]], label=conc, linewidth=4)
+                axs[i].plot(np.array(offsets) + x[j], means, color=colors[conc]['drugtreated'], label=conc, linewidth=4, zorder=10)
 
         handles, labels = axs[i].get_legend_handles_labels()
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
@@ -824,7 +1003,447 @@ def photomotor_aggregates_stim_repetition(mcam, conditions=list(), concentration
 
         axs[i].set_title(stim, fontsize=18)
         axs[i].set_xticks(x + width, conditions)
+
+        if normalize is None or normalize == 'difference':
+            axs[i].set_ylabel('Total distance traveled (m)', fontsize=18)
+        elif normalize == 'difference':
+            axs[i].set_ylabel('Change in distance traveled from baseline', fontsize=18)
+        elif normalize == 'ratio':
+            axs[i].set_ylabel('Fold change from baseline', fontsize=18)
+        elif normalize == 'percent':
+            axs[i].set_ylabel('Percent change from baseline', fontsize=18)
+
+    if savefig:
+        if normalize is not None:
+            save_figure(mcam, fig, f'epoch_repetitions_{normalize}_normalized.pdf')
+        else:
+            save_figure(mcam, fig, 'epoch_repetitions.pdf')
+
+
+def cumulative_startle_distance(mcam, time_gap=0, normalize=False, conditions=list(), concentrations=list(), savefig=True):
+    '''
+    Plot cumulative distance during startle stimuli
+    time_gap: gap in seconds to leave between the first and second repetition of the startle stimuli
+    normalize: if True, normalizes the cumulative sum of each fish to be between [0, 1]
+    '''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    starts_stops = get_stimulus_starts_stops(mcam)
+    stimuli = ['light_flash', 'dark_flash', 'vibration_startle']
+
+    fig, axs = plt.subplots(len(stimuli), len(conditions), figsize=(50, 10*len(stimuli)), sharey=True)
+    colors = color_palette()
+
+    for i, stim in enumerate(stimuli):
+        repetitions = [key for key in starts_stops if key.startswith(stim)]
+
+        for j, condition in enumerate(conditions):
+            vspan = False
+            for conc in concentrations:
+                df = mcam.dataframes[condition]['distance'][conc]
+
+                all_fish = list()
+
+                for fish in df:
+                    if fish.startswith('distance_traveled'):
+
+                        fish_dists = list()
+                        xs = list()
+
+                        for rep in repetitions:
+                            stimdf = df.iloc[starts_stops[rep][0]:starts_stops[rep][1], :]
+                            time = stimdf['time']
+
+                            x = np.array(time) - time.iloc[0]
+
+                            if len(fish_dists) != 0:
+                                fish_dists.append(np.nan)
+
+                                final_x = xs[-1][-1]
+                                x = x + final_x + time_gap
+                                xs.append(((x[0] - final_x)/2) + final_x)
+
+                            if normalize:
+                                fish_dists.append(stimdf[fish].cumsum()/stimdf[fish].cumsum().iloc[-1])
+                            else:
+                                fish_dists.append(stimdf[fish].cumsum())
+
+                            xs.append(x)
+
+                            if not vspan:
+                                diff = 0
+                                for num in stimdf[stimdf['stim_name'] == stim]['stim_num'].unique():
+                                    start = stimdf[(stimdf['stim_name'] == stim) & (stimdf['stim_num'] == num)].iloc[0, 0]
+                                    end = stimdf[(stimdf['stim_name'] == stim) & (stimdf['stim_num'] == num)].iloc[-1, 0]
+                                    if num == 0 or num == 5:
+                                        diff = start - x[0]
+                                    axs[i, j].axvspan(start-diff, end-diff, alpha=0.2)
+
+                        vspan=True
+
+                        all_fish.append(np.hstack(fish_dists))
+                        axs[i, j].plot(np.hstack(xs), np.hstack(fish_dists), color=colors[conc]['drugtreated'], alpha=0.25)
+
+                means = np.mean(all_fish, axis=0)
+                axs[i, j].plot(np.hstack(xs), means, color=colors[conc]['drugtreated'], label=conc, linewidth=4, zorder=10)
+
+            handles, labels = axs[i, j].get_legend_handles_labels()
+            unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+            axs[i, j].legend(*zip(*unique))
+
+            axs[i, j].set_title(f'{stim} - {condition}', fontsize=18)
+
+    if savefig:
+        if normalize:
+            save_figure(mcam, fig, f'cumulative_startle_distance_normalized.pdf')
+        else:
+            save_figure(mcam, fig, f'cumulative_startle_distance.pdf')
+
+
+def plot_speed_per_condition(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False):
+    '''Plots speed over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(conditions), figsize=(25, (10*len(conditions))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, condition in enumerate(conditions):
+        dfs = mcam.dataframes[condition]['speed']
+
+        for conc in concentrations:
+
+            df = dfs[conc]
+
+            cols = [col for col in df if col.startswith('speed')]
+            n_fish = len(cols)
+
+            if rolling_window != 0:
+                x = df.iloc[:, 0]
+                y = df['average_speed'].rolling(rolling_window, center=True, min_periods=0).mean()
+                err = df['average_speed'].rolling(rolling_window, center=True, min_periods=0).sem()
+
+            elif time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+
+                grouped_df = df.groupby(['binned_time']).mean()
+                x = grouped_df.index.values
+                y = grouped_df[cols].mean(axis=1)
+                err = grouped_df[cols].sem(axis=1)
+
+            else:
+                x = df.iloc[:, 0]
+                y = df['average_speed']
+                err = df['sem']
+
+            axs[i].plot(x, y, label=f'{str(conc)}, n={n_fish}', color=colors[conc]['drugtreated'])
+            axs[i].fill_between(x, y-err, y+err, alpha=0.5, color=colors[conc]['drugtreated'])
+
+        axs[i].set_title(condition, fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Average speed (m/s)', fontsize=18)
+
+    if savefig:
+        if rolling_window != 0:
+            save_figure(mcam, fig, f'speed_per_condition_rolling{rolling_window}.pdf')
+        elif time_bin != 0:
+            save_figure(mcam, fig, f'speed_per_condition_timebin{time_bin}s.pdf')
+
+
+def plot_speed_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False):
+    '''Plots speed over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(concentrations), figsize=(25, (10*len(concentrations))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, conc in enumerate(concentrations):
+        for condition in conditions:
+            df = mcam.dataframes[condition]['speed'][conc]
+
+            cols = [col for col in df if col.startswith('speed')]
+            n_fish = len(cols)
+
+            if rolling_window != 0:
+                x = df.iloc[:, 0]
+                y = df['average_speed'].rolling(rolling_window, center=True, min_periods=0).mean()
+                err = df['average_speed'].rolling(rolling_window, center=True, min_periods=0).sem()
+
+            elif time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+
+                grouped_df = df.groupby(['binned_time']).mean()
+                x = grouped_df.index.values
+                y = grouped_df[cols].mean(axis=1)
+                err = grouped_df[cols].sem(axis=1)
+
+            else:
+                x = df.iloc[:, 0]
+                y = df['average_speed']
+                err = df['sem']
+
+            axs[i].plot(x, y, label=f'{condition}, n={n_fish}', color=colors[conc][condition])
+            axs[i].fill_between(x, y-err, y+err, alpha=0.5, color=colors[conc][condition])
+
+        axs[i].set_title(str(conc), fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Average speed (m/s)', fontsize=18)
+
+    if savefig:
+        if rolling_window != 0:
+            save_figure(mcam, fig, f'speed_per_concentration_rolling{rolling_window}.pdf')
+        elif time_bin != 0:
+            save_figure(mcam, fig, f'speed_per_concentration_timebin{time_bin}s.pdf')
+
+
+def plot_single_speed_per_condition(mcam, normalize=False, conditions=list(), concentrations=list(), savefig=True, time_bin=0, force_add_bins=False):
+    '''Plots speed over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(conditions), figsize=(25, (10*len(conditions))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, condition in enumerate(conditions):
+        for conc in concentrations:
+
+            df = mcam.dataframes[condition]['speed'][conc]
+
+            cols = [col for col in df if col.startswith('speed')]
+            n_fish = len(cols)
+
+            speeds = list()
+
+            if normalize:
+                baseline_df = mcam.dataframes['baseline']['speed'][conc]
+                baseline_df = baseline_df[baseline_df.stim_name == 'locomotor']
+                if time_bin != 0:
+                    baseline_df = baseline_df.groupby(['binned_time']).mean()
+
+            if time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+                df = df.groupby(['binned_time']).mean()
+                x = df.index.values
+            else:
+                x = df.iloc[:, 0]
+
+            for fish in cols:
+                if normalize:
+                    baseline_dist = baseline_df[fish].mean()
+                    y = df[fish]-baseline_dist
+                else:
+                    y = df[fish]
+
+                axs[i].plot(x, y, alpha=0.25, color=colors[conc]['drugtreated'])
+                speeds.append(y)
+
+            mean = np.array(speeds).mean(axis=0)
+            err = sem(np.array(speeds), axis=0)
+
+            axs[i].plot(x, mean, label=f'{str(conc)}, n={n_fish}', linewidth=2, zorder=10, color=colors[conc]['drugtreated'])
+            axs[i].fill_between(x, mean-err, mean+err, alpha=0.5, zorder=10, color=colors[conc]['drugtreated'])
+
+        axs[i].set_title(condition, fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Average speed (m/s)', fontsize=18)
+
+    if savefig:
+        filename = 'single_speed_per_condition'
+        if time_bin != 0:
+            filename += f'_timebin{time_bin}s'
+        if normalize:
+            filename += f'_normalized'
+        save_figure(mcam, fig, filename + '.pdf')
+
+
+def plot_single_speed_per_concentration(mcam, conditions=list(), concentrations=list(), savefig=True, rolling_window=0, time_bin=0, force_add_bins=False, normalize=False):
+    '''Plots speed over time of given conditions and concentrations'''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    if force_add_bins:
+        add_bins(mcam, time_bin=time_bin)
+
+    fig, axs = plt.subplots(len(concentrations), figsize=(25, (10*len(concentrations))), sharey=True, sharex=True)
+    colors = color_palette()
+
+    for i, conc in enumerate(concentrations):
+        for condition in conditions:
+            df = mcam.dataframes[condition]['speed'][conc]
+
+            cols = [col for col in df if col.startswith('speed')]
+            n_fish = len(cols)
+
+            speeds = list()
+
+            if normalize:
+                baseline_df = mcam.dataframes['baseline']['speed'][conc]
+                baseline_df = baseline_df[baseline_df.stim_name == 'locomotor']
+                if time_bin != 0:
+                    baseline_df = baseline_df.groupby(['binned_time']).mean()
+
+            if time_bin != 0:
+                if 'binned_time' not in df.columns:
+                    add_bins(mcam, time_bin=time_bin)
+                df = df.groupby(['binned_time']).mean()
+                x = df.index.values
+            else:
+                x = df.iloc[:, 0]
+
+            for fish in cols:
+                if normalize:
+                    baseline_dist = baseline_df[fish].mean()
+                    y = df[fish]-baseline_dist
+                else:
+                    y = df[fish]
+
+                axs[i].plot(x, y, alpha=0.25, color=colors[conc][condition])
+                speeds.append(y)
+
+            mean = np.array(speeds).mean(axis=0)
+            err = sem(np.array(speeds), axis=0)
+
+            axs[i].plot(x, mean, label=f'{condition}, n={n_fish}', linewidth=2, zorder=10, color=colors[conc][condition])
+            axs[i].fill_between(x, mean-err, mean+err, alpha=0.5, zorder=10, color=colors[conc][condition])
+
+        axs[i].set_title(str(conc), fontsize=18)
+        axs[i].legend()
+
+        plot_stimulus_range(mcam, axs[i], stimuli={'dark_epoch': [0, 6, 12]})
+
+    fig.supxlabel('Time (s)', fontsize=18)
+    fig.supylabel('Average speed (m/s)', fontsize=18)
+
+    if savefig:
+        filename = 'single_speed_per_concentration'
+        if time_bin != 0:
+            filename += f'_timebin{time_bin}s'
+        if normalize:
+            filename += f'_normalized'
+        save_figure(mcam, fig, filename + '.pdf')
+
+
+def startle_aggregates_stim_repetition(mcam, normalize=False, conditions=list(), concentrations=list(), savefig=True):
+    '''
+    Aggregates the distance data per 1 second startle stimulus + 0.5 second after and plots line for each fish.
+    Each fish is colored by concentration.
+    x-axis is condition, with each stimulus repetition grouped together.
+    '''
+
+    if len(conditions) == 0:
+        conditions = list(mcam.dataframes.keys())
+
+    if len(concentrations) == 0:
+        concentrations = mcam.concentrations
+
+    x = np.arange(len(conditions))  # the label locations
+    width = 0.08  # the width of the bars
+
+    starts_stops = get_stimulus_starts_stops(mcam)
+    stimuli = ['light_flash', 'dark_flash', 'vibration_startle']
+
+    fig, axs = plt.subplots(len(stimuli), 1, figsize=(25, 10*len(stimuli)), sharey=True)
+    colors = color_palette()
+
+    for i, stim in enumerate(stimuli):
+        repetitions = [key for key in starts_stops if key.startswith(stim)]
+
+        for j, condition in enumerate(conditions):
+            for conc in concentrations:
+                df = mcam.dataframes[condition]['distance'][conc]
+
+                all_fish = list()
+
+                for fish in df:
+                    if fish.startswith('distance_traveled'):
+                        fish_dists = list()
+                        offsets = list()
+
+                        multiplier = 0
+
+                        for r, rep in enumerate(repetitions):
+                            stimdf = df.iloc[starts_stops[rep][0]:starts_stops[rep][1], :]
+                            for num in stimdf[stimdf['stim_name'] == stim].stim_num.unique():
+                                if normalize and (num == 0 or num == 5):
+                                    prev = df.iloc[starts_stops[rep][0]-1, :]
+                                    prevdf = df[(df.stim_name == prev.stim_name) & (df.stim_num == prev.stim_num)]
+                                    start_t = prevdf.iloc[-1, 0] - 15
+                                    baseline_dist = prevdf.iloc[np.where(prevdf['time'] > start_t)[0], :][fish].mean()
+                                else:
+                                    baseline_dist = 0
+                                _dists = stimdf[(stimdf['stim_name'] == stim) & (stimdf['stim_num'] == num)].loc[:, fish] - baseline_dist
+                                fish_dists.append(_dists.sum())
+                                offsets.append(width * multiplier)
+                                multiplier += 1
+
+                            if r == 0:
+                                fish_dists.append(np.nan)
+                                offsets.append((width/10) * multiplier)
+                                multiplier += 1
+
+                        all_fish.append(fish_dists)
+                        axs[i].plot(np.array(offsets) + x[j], fish_dists, color=colors[conc]['drugtreated'], alpha=0.25)
+
+                means = np.array(all_fish).mean(axis=0)
+                axs[i].plot(np.array(offsets) + x[j], means, color=colors[conc]['drugtreated'], label=conc, linewidth=4, zorder=10)
+
+        handles, labels = axs[i].get_legend_handles_labels()
+        unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+        axs[i].legend(*zip(*unique))
+
+        axs[i].set_title(stim, fontsize=18)
+        axs[i].set_xticks(x + 5*width, conditions)
+        axs[i].set_ylim(top=0.02)
         axs[i].set_ylabel('Total distance traveled (m)', fontsize=18)
 
     if savefig:
-        save_figure(mcam, fig, 'epoch_repetitions.pdf')
+        if normalize:
+            save_figure(mcam, fig, f'startle_repetitions_normalized.pdf')
+        else:
+            save_figure(mcam, fig, 'startle_repetitions.pdf')
