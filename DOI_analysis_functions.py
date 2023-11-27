@@ -1084,7 +1084,6 @@ def plot_all_distovertime(folder, alldf):
         for t in range(len(bin_sums)):
             bin_means.append(np.mean(bin_sums[t]))
         plt.plot(timebins, bin_means, label=f'{conc} ug/ml, n={len(subdf.fish_id.unique())}')
-    # aloye come back here
     ax.set_ylabel('Bout Distance (px)', fontsize='x-large')
     ax.set_xlabel('Time (s)', fontsize='x-large')
     ax.legend(loc='upper right')
