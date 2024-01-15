@@ -26,7 +26,6 @@ TODO LATER:
         - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
             drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary 
     
-    
     24 HR RECOVERY
         - Wells are A1-A6...D1-D6
             - each column gets a different concentration 
