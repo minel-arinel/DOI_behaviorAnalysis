@@ -15,7 +15,7 @@ TODO LATER:
         - specific --> time in thigomotaxis (epoch_time_of_thigmotaxis) / total epoch duration (before startle --> 
                 end of epoch - start of epoch) * 100
         - not specific --> average the specific ones 
-    - Make % thigmo distance in outer circle -->
+    - Make % thigmotaxis distance in outer circle -->
         - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
     - Add specific feature to startle_response_distance and startle_response_speed
     - automate making the csv file --> all of the possibilities should be ran in this method
