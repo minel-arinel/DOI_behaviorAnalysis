@@ -377,16 +377,31 @@ def bout_duration_histogram(alldf, bout_type='bout_duration'):
     unique_concentrations = sorted(alldf['concentration'].unique())
     fig, axs = plt.subplots(len(unique_concentrations), len(alldf['condition'].unique()),
                             sharey=True, figsize=(10, 6))
+
+    cmap = plt.get_cmap('tab10')
+    colors = [cmap(0), cmap(1)]
+
     for i, conc in enumerate(unique_concentrations):
         for j, cond in enumerate(sorted(alldf['condition'].unique())):
             subset = alldf[(alldf['condition'] == cond) & (alldf['concentration'] == conc)]
-            axs[i][j].hist(subset[bout_type], bins=20)
+            axs[i][j].hist(subset[bout_type], bins=20, color=colors[i])
             axs[i][j].set_xlabel(bout_type)
             if i == 0:
                 axs[i][j].set_title(cond)
             if j == 0:
                 axs[i][j].set_ylabel(f'{conc} concentration')
+            if j > 0:
+                axs[i][j].set_ylabel('')
+
+    norm = mpl.colors.Normalize(vmin=0, vmax=1)
+    cmap = mpl.colors.ListedColormap(colors)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axs.ravel().tolist())
+    cbar.set_ticks([0.25, 0.75])
+    cbar.set_ticklabels(['baseline', 'drug-treated'])
+
     plt.show()
+
+
 
 def plot_stimulus_heatmap(alldf):
     pivot = alldf.pivot_table(values='distance', index='stim_name', columns='concentration', aggfunc='mean')
@@ -713,6 +728,42 @@ def histplot_perfish(folder, df, level, measure):
     if level == 'exp':
         fig.suptitle(folder[folder.rfind('\\') + 1:], y=0.9, fontsize='x-large')
         plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram_perfish'),
+                    dpi=300, transparent=False)
+
+
+def boutangle_histplot_perfish(folder, df, measure, level="exp"):
+    # Plot histogram of measure for all fish, separated by concentration
+    # Does not include stat_time
+
+    # determine the number of bins by calculating the square root of the number of data points
+    df = df[df.bout.notna()]
+    bin_n = ceil(np.sqrt(len(df[measure])))
+    fig, axs = plt.subplots(nrows=len(df.stim_name.unique()), ncols=len(df.condition.unique()), sharex=True,
+                            sharey=True,
+                            figsize=(10 * len(df.condition.unique()), 5 * len(df.stim_name.unique())))
+    stims = df.stim_name.unique()
+
+    for j, _cond in enumerate(df.condition.unique()):
+        for i, _stim in enumerate(stims):
+            subdf = df[(df.condition == _cond) & (df.stim_name == _stim) & (df.bout_start >= df.stat_time)]
+            tot_stimduration = np.sum([subdf[subdf.stim_index == s].stim_duration.values[0] -
+                                       subdf[subdf.stim_index == s].stat_time.values[0] for s in
+                                       subdf.stim_index.unique()])
+            cnts, bins = np.histogram(np.nan_to_num(subdf[measure]), bins=bin_n)
+            time_normalized_cnts = cnts / tot_stimduration * 1000
+            bin_centers = bins[:-1] + np.diff(bins)[0] / 2  # find the center points of bins to have a line plot
+            axs[i, j].plot(bin_centers, time_normalized_cnts)
+            axs[i, j].set_title(_cond, fontsize='large')
+            if j == 0:
+                axs[i, j].set_ylabel(_stim, fontsize='large')
+            if i == 0:
+                axs[i, j].set_title(_cond, fontsize='large')
+
+    fig.supylabel('Frequency (mHz)', fontsize='x-large', x=0.095)
+    fig.supxlabel(measure, fontsize='x-large', y=0.1)
+    if level == 'exp':
+        fig.suptitle(folder[folder.rfind('\\') + 1:], y=0.9, fontsize='x-large')
+        plt.savefig(os.path.join(folder, folder[folder.rfind('\\') + 1:] + '_' + measure + '_histogram_all'),
                     dpi=300, transparent=False)
 
 
