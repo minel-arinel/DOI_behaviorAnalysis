@@ -10,6 +10,13 @@ Questions:
 """
 
 """    
+COMPLETED: 
+ - adding specific to startle_response_speed and startle_response_distance
+ - making the df being overwritten w/ new y value
+ - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
+        drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary
+
+
 TODO LATER:
     - Make % thigomotaxis time in outer circle function --> 
         - specific --> time in thigomotaxis (epoch_time_of_thigmotaxis) / total epoch duration (before startle --> 
@@ -17,15 +24,11 @@ TODO LATER:
         - not specific --> average the specific ones 
     - Make % thigmotaxis distance in outer circle -->
         - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
-    - Add specific feature to startle_response_distance and startle_response_speed
     - automate making the csv file --> all of the possibilities should be ran in this method
         - figure out how to decide between photomotor, startle, and thigmotaxis
         - add a feature that determines fish id by column or row
-    - Make a note that the mean is distance / frame (average per frame)
-    - Change update_data_file to be able to override rows (do not check if the y-value is the same)
-        - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
-            drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary 
-    
+    - Make a note that the mean is distance / frame (average per frame) 
+
     24 HR RECOVERY
         - Wells are A1-A6...D1-D6
             - each column gets a different concentration 
@@ -79,6 +82,15 @@ data_dict = {
     "recovery": 0,
     "drug": 0,
     "dose": 0.0
+}
+
+fish_nums = {
+    0.0: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    0.05: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
+    0.5: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60],
+    2.5: [61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80],
+    5.0: [81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
+    50.0: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
 }
 
 thigmotaxic_distance = 0.0053
@@ -170,9 +182,18 @@ def populate_df_dictionary(metadata, metric_data, specific):
                                  "MCAM_fish_metrics.csv")
 
 
+def adjust_fish_id(original_fish_id, concentration):
+    global fish_nums
+    concentration = float(concentration)
+    index = original_fish_id - 1
+    return fish_nums[concentration][index]
+
+
 def update_data_file(dictionary, directory, file_name):
+    global fish_nums
     file_path = os.path.join(directory, file_name)
     file_exists = os.path.isfile(file_path)
+    dictionary["fish"] = adjust_fish_id(dictionary["fish"], dictionary["dose"])
     df = pd.DataFrame([dictionary])
     df['dose'] = df['dose'].astype(float)
 
@@ -182,15 +203,22 @@ def update_data_file(dictionary, directory, file_name):
         for index, row in existing_df.iterrows():
             duplicate_data = []
             single_row = pd.DataFrame([existing_df.iloc[index]])
+            different_y = False
             for col in single_row.columns:
                 if df[col].iloc[0] == single_row[col].iloc[0]:
                     duplicate_data.append(True)
                 else:
-                    duplicate_data.append(False)
+                    if col == "y":
+                        different_y = True
+                    else:
+                        duplicate_data.append(False)
             if all(duplicate_data):
-                print("The data in the following row already exists in the DataFrame.")
-                print(f"{df}\n")
-                return existing_df
+                if different_y:
+                    existing_df.loc[index:index, "y"] = df["y"].iloc[0]
+                else:
+                    print("The data in the following row already exists in the DataFrame.")
+                    print(f"{df}\n")
+                    return existing_df
 
         combined_df = pd.concat([existing_df, df], ignore_index=True)
         combined_df.to_csv(file_path, index=False)
@@ -221,27 +249,30 @@ def handle_photomotor_behavior(df, light, tracking, metric, specific):
 
 def handle_startle_response(df, startle_response, tracking, metric, specific):
     metric_name_dict = {}
-    startle_response_name = f"{metric}_{tracking}_{startle_response}_startle"
+    startle_response_name = ""
     diff_first_last_rep_name = ""
     average_latency_name = ""
     if specific:
+        name_startle = f"{metric}_{tracking}_{startle_response}_startle_rep_"
         name_diff = f"diff_{metric}_{tracking}_{startle_response}_startle_rep_"
         name_avg_lat = f"avg_latency_{metric}_{tracking}_{startle_response}_startle_rep_"
         for x in range(1, 3):
+            startle_response_name += name_startle + str(x) + ";" if x != 2 else name_startle + str(x)
             diff_first_last_rep_name += name_diff + str(x) + ";" if x != 2 else name_diff + str(x)
             average_latency_name += name_avg_lat + str(x) + ";" if x != 2 else name_avg_lat + str(x)
     else:
+        startle_response_name = f"{metric}_{tracking}_{startle_response}_startle_all"
         diff_first_last_rep_name = f"diff_{metric}_{tracking}_{startle_response}_startle_all"
         average_latency_name = f"avg_latency_{metric}_{tracking}_{startle_response}_startle_all"
 
     if tracking == "distance":
-        metric_name_dict[startle_response_name] = [startle_response_distance(df, startle_response, metric)]
+        metric_name_dict[startle_response_name] = [startle_response_distance(df, startle_response, metric, specific)]
         metric_name_dict[diff_first_last_rep_name] = [diff_first_last_startle_rep_distance(df, startle_response, metric,
                                                                                            specific)]
         metric_name_dict[average_latency_name] = [average_latency_startle_distance(df, startle_response, specific)]
         return metric_name_dict.items()
     elif tracking == "speed":
-        metric_name_dict[startle_response_name] = [startle_response_speed(df, startle_response, metric)]
+        metric_name_dict[startle_response_name] = [startle_response_speed(df, startle_response, metric, specific)]
         metric_name_dict[diff_first_last_rep_name] = [diff_first_last_startle_rep_speed(df, startle_response, metric,
                                                                                         specific)]
         metric_name_dict[average_latency_name] = [average_latency_startle_speed(df, startle_response, specific)]
@@ -333,7 +364,7 @@ def epoch_speed(df, light, metric, specific):
     return fish_ids, metric_lst
 
 
-def startle_response_distance(df, startle_response, metric):
+def startle_response_distance(df, startle_response, metric, specific):
     global startle_time_ranges
     distance_df = df.filter(regex='distance_traveled|time|stim_name')
     fish_ids = [fish_id for fish_id, column in enumerate(distance_df) if "distance_traveled" in column]
@@ -353,12 +384,16 @@ def startle_response_distance(df, startle_response, metric):
                 filtered_time = distance_df.loc[distance_df['time'].between(start, end, inclusive='left')]
                 stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
                 totals.extend(calculate_metric(stim_filtered, metric))
-            metric_lst.append(
-                [max(totals)] if metric == "max" else [sum(totals)] if metric == "sum" else [sum(totals) / len(totals)])
+            if specific:
+                metric_lst.append(totals)
+            else:
+                aggregated_metric = max(totals) if metric == "max" else sum(totals) if metric == "sum" else sum(
+                    totals) / len(totals)
+                metric_lst.append([aggregated_metric])
     return fish_ids, metric_lst
 
 
-def startle_response_speed(df, startle_response, metric):
+def startle_response_speed(df, startle_response, metric, specific):
     if metric == "sum":
         return "Sum is not a valid metric for speed. Input either mean or max."
 
@@ -381,7 +416,11 @@ def startle_response_speed(df, startle_response, metric):
                 filtered_time = speed_df.loc[speed_df['time'].between(start, end, inclusive='left')]
                 stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
                 totals.extend(calculate_metric(stim_filtered, metric))
-            metric_lst.append([max(totals)] if metric == "max" else [sum(totals) / len(totals)])
+            if specific:
+                metric_lst.append(totals)
+            else:
+                aggregated_metric = max(totals) if metric == "max" else sum(totals) / len(totals)
+                metric_lst.append([aggregated_metric])
     return fish_ids, metric_lst
 
 
@@ -610,6 +649,6 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 if __name__ == '__main__':
     # process_file("baseline_distance_0.05.csv", "photomotor", "dark", "sum", True)
     # process_file("baseline_speed_2.5.csv", "photomotor", "dark", "max", True)
-    process_file("baseline_speed_0.05.csv", "startle", "dark", "mean")
+    process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
     # process_file("baseline_distance_0.05.csv", "startle", "vibration", "sum")
     # process_file("baseline_tracking_50.csv", "thigmotaxis", "light", "mean", True)
