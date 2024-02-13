@@ -15,15 +15,16 @@ COMPLETED:
  - making the df being overwritten w/ new y value
  - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
         drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary
-
-
-TODO LATER:
-    - Make % thigomotaxis time in outer circle function --> 
+- Make % thigomotaxis time in outer circle function --> 
         - specific --> time in thigomotaxis (epoch_time_of_thigmotaxis) / total epoch duration (before startle --> 
                 end of epoch - start of epoch) * 100
         - not specific --> average the specific ones 
-    - Make % thigmotaxis distance in outer circle -->
-        - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
+- Make % thigmotaxis distance in outer circle -->
+    - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
+
+
+
+TODO LATER:
     - automate making the csv file --> all of the possibilities should be ran in this method
         - figure out how to decide between photomotor, startle, and thigmotaxis
         - add a feature that determines fish id by column or row
@@ -98,6 +99,28 @@ thigmotaxic_distance = 0.0053
 csv_file_path = "/Users/aloyeoshotse/AJO/NAUMANN_LAB/DOI_behaviorAnalysis/csv_files"
 
 
+def run_all_metric_functions():
+    behavior = ["photomotor", "startle", "thigmotaxis"]
+    period = ["light", "dark", "vibration"]
+    metric = ["max", "mean", "sum"]
+    specific = [True, False]
+
+    for csv_file in os.listdir("csv_files"):
+        for i in range(len(behavior)):
+            for x in range(len(period)):
+                for y in range(len(metric)):
+                    for j in range(len(specific)):
+                        if behavior[i] != "startle" and period[x] == "vibration":
+                            pass
+                        elif "speed" in csv_file and metric[y] == "sum":
+                            pass
+                        elif "recovery" in csv_file:
+                            pass
+                        else:
+                            print([csv_file, behavior[i], period[x], metric[y], specific[j]])
+                            process_file(csv_file, behavior[i], period[x], metric[y], specific[j])
+
+
 def process_file(file_name, behavior, period, metric="", specific=False):
     file_name = os.path.join(csv_file_path, file_name)
     df = pd.read_csv(file_name, low_memory=False)
@@ -140,6 +163,7 @@ def process_file(file_name, behavior, period, metric="", specific=False):
         print("Input either 'photomotor', 'startle', or 'thigmotaxis' for 'behavior'.")
         return
 
+    # print(data)
     for metric_data in data:
         populate_df_dictionary(metadata, metric_data, specific)
 
@@ -285,22 +309,35 @@ def handle_thigmotaxis(df, df2, light, specific):
     mean_dist_name = ""
     thig_time_name = ""
     total_dist_name = ""
+    per_thig_time_name = ""
+    per_thig_dist_name = ""
+
     if specific:
         name_mean_dist = f"thigmotaxis_mean_distance_{light_name}_epoch_"
         name_time = f"thigmotaxis_total_time_{light_name}_epoch_"
         name_total_dist = f"thigmotaxis_total_distance_{light_name}_epoch_"
+        name_per_thig_time = f"thigmotaxis_percent_time_{light_name}_epoch_"
+        name_per_thig_dist = f"thigmotaxis_percent_distance_{light_name}_epoch_"
+
         for x in range(1, 4):
             mean_dist_name += name_mean_dist + str(x) + ";" if x != 3 else name_mean_dist + str(x)
             thig_time_name += name_time + str(x) + ";" if x != 3 else name_time + str(x)
             total_dist_name += name_total_dist + str(x) + ";" if x != 3 else name_total_dist + str(x)
+            per_thig_time_name += name_per_thig_time + str(x) + ";" if x != 3 else name_per_thig_time + str(x)
+            per_thig_dist_name += name_per_thig_dist + str(x) + ";" if x != 3 else name_per_thig_dist + str(x)
+
     else:
         mean_dist_name = f"thigmotaxis_mean_distance_{light_name}_epoch_all"
         thig_time_name = f"thigmotaxis_total_time_{light_name}_epoch_all"
         total_dist_name = f"thigmotaxis_total_distance_{light_name}_epoch_all"
+        per_thig_time_name = f"thigmotaxis_percent_time_{light_name}_epoch_all"
+        per_thig_dist_name = f"thigmotaxis_percent_distance_{light_name}_epoch_all"
 
     metric_name_dict[mean_dist_name] = [epoch_mean_dist_thigmotaxis(df, light, specific)]
     metric_name_dict[thig_time_name] = [epoch_time_of_thigmotaxis(df, light, specific)]
     metric_name_dict[total_dist_name] = [epoch_total_distance_thigmotaxis(df, df2, light, specific)]
+    metric_name_dict[per_thig_time_name] = [percent_thig_time(df, light, specific)]
+    metric_name_dict[per_thig_dist_name] = [percent_thig_distance(df, df2, light, specific)]
     return metric_name_dict.items()
 
 
@@ -591,6 +628,34 @@ def epoch_mean_dist_thigmotaxis(df, light, specific):
     return fish_ids, metric_lst
 
 
+def percent_thig_time(df, light, specific):
+    # TODO: check this function
+    global epoch_time_ranges
+    global thigmotaxic_distance
+    tracking_df = df.filter(regex='^(?!.*average).*dist_from_center|time|stim_name')
+    stim_name = "light_epoch" if light == 1 else "dark_epoch"
+    fish_ids = [fish_id for fish_id, column in enumerate(tracking_df) if "dist_from_center" in column]
+    metric_lst = []
+    time_per_index = 0.033328974
+
+    for column in tracking_df:
+        if "dist_from_center" in column:
+            totals = []
+            for start, end in epoch_time_ranges[light]:
+                filtered_time = tracking_df.loc[tracking_df['time'].between(start, end, inclusive='left')]
+                stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name]
+                thig_filtered = stim_filtered[stim_filtered[column] > thigmotaxic_distance]["time"]
+                total_time_thigmotaxis = len(thig_filtered) * time_per_index
+                per_thig_time = (total_time_thigmotaxis / (end - start)) * 100
+                totals.append(per_thig_time)
+            if specific:
+                metric_lst.append(totals)
+            else:
+                aggregated_metric = sum(totals) / len(totals)
+                metric_lst.append([aggregated_metric])
+    return fish_ids, metric_lst
+
+
 def epoch_time_of_thigmotaxis(df, light, specific):
     global epoch_time_ranges
     global thigmotaxic_distance
@@ -614,6 +679,46 @@ def epoch_time_of_thigmotaxis(df, light, specific):
             else:
                 aggregated_metric = sum(totals)
                 metric_lst.append([aggregated_metric])
+    return fish_ids, metric_lst
+
+
+def percent_thig_distance(df, df2, light, specific):
+    # TODO: check this function
+    global epoch_time_ranges
+    global thigmotaxic_distance
+    tracking_df = df.filter(regex='^(?!.*average).*dist_from_center|time|stim_name')
+    distance_df = df2.filter(regex='distance_traveled|time|stim_name')
+    stim_name = "light_epoch" if light == 1 else "dark_epoch"
+    fish_ids = [fish_id for fish_id, column in enumerate(tracking_df) if "dist_from_center" in column]
+    metric_lst = []
+    distance_column = 1
+
+    for column in tracking_df:
+        if "dist_from_center" in column:
+            totals = []
+            for start, end in epoch_time_ranges[light]:
+                filtered_time = tracking_df.loc[tracking_df['time'].between(start, end, inclusive='left')]
+                stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name]
+                thig_filtered = stim_filtered[stim_filtered[column] > thigmotaxic_distance]["time"]
+                thig_filtered_ind_lst = list(thig_filtered.index.values)
+
+                filtered_dist_time = distance_df.loc[distance_df['time'].between(start, end, inclusive='left')]
+                col_name = distance_df.columns[distance_column]
+                stim_dist_filtered = filtered_dist_time[filtered_dist_time['stim_name'] == stim_name][col_name]
+
+                filtered_thig_distances = distance_df.iloc[thig_filtered_ind_lst, distance_column]
+                dist_thig = calculate_metric(filtered_thig_distances, "sum")
+                total_distance = calculate_metric(stim_dist_filtered, "sum")
+
+                per_thig_dist = [(dist_thig[0] / total_distance[0]) * 100]
+                totals.extend(per_thig_dist)
+
+            if specific:
+                metric_lst.append(totals)
+            else:
+                aggregated_metric = sum(totals) / len(totals)
+                metric_lst.append([aggregated_metric])
+            distance_column += 1
     return fish_ids, metric_lst
 
 
@@ -649,6 +754,7 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 if __name__ == '__main__':
     # process_file("baseline_distance_0.05.csv", "photomotor", "dark", "sum", True)
     # process_file("baseline_speed_2.5.csv", "photomotor", "dark", "max", True)
-    process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
+    # process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
     # process_file("baseline_distance_0.05.csv", "startle", "vibration", "sum")
-    # process_file("baseline_tracking_50.csv", "thigmotaxis", "light", "mean", True)
+    # process_file("baseline_tracking_50.csv", "thigmotaxis", "light", "mean", False)
+    run_all_metric_functions()
