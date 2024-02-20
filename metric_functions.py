@@ -11,30 +11,39 @@ Questions:
 
 """    
 COMPLETED: 
- - adding specific to startle_response_speed and startle_response_distance
- - making the df being overwritten w/ new y value
- - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
-        drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary
-- Make % thigomotaxis time in outer circle function --> 
-        - specific --> time in thigomotaxis (epoch_time_of_thigmotaxis) / total epoch duration (before startle --> 
-                end of epoch - start of epoch) * 100
-        - not specific --> average the specific ones 
-- Make % thigmotaxis distance in outer circle -->
-    - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
-
-
-
-TODO LATER:
-    - automate making the csv file --> all of the possibilities should be ran in this method
-        - figure out how to decide between photomotor, startle, and thigmotaxis
-        - add a feature that determines fish id by column or row
+    - adding specific to startle_response_speed and startle_response_distance
+    - making the df being overwritten w/ new y value
+    - change the fish_id when the dose is changed, but keep consistent when treatment is different (baseline vs 
+            drugtreated vs 24 hr) --> can make a dataframe keeping track of this or a dictionary
+    - Make % thigomotaxis time in outer circle function --> 
+            - specific --> time in thigomotaxis (epoch_time_of_thigmotaxis) / total epoch duration (before startle --> 
+                    end of epoch - start of epoch) * 100
+            - not specific --> average the specific ones 
+    - Make % thigmotaxis distance in outer circle -->
+        - specific --> (total thig distance in that epoch / total distance in that epoch)  * 100
+     - automate making the csv file --> all of the possibilities should be ran in this method
+            - figure out how to decide between photomotor, startle, and thigmotaxis
+            - add a feature that determines fish id by column or row
     - Make a note that the mean is distance / frame (average per frame) 
 
     24 HR RECOVERY
         - Wells are A1-A6...D1-D6
             - each column gets a different concentration 
-            - first experiement had no fish removed
+            - first experiment had no fish removed
+
+TODO LATER:
+    - update the function "update_data_file" to filter removed fish for the
+        24 hr recovery period (could also put it in populate_df_dictionary()" before
+        the update_data_file function is called (line 212)
+    - add something to account for column and rows --> take 
         
+    - columns to skip / fish_id to remove:
+        0.0 conc --> 5, 11, 12 // (5, 11, 12)
+        .05 conc --> 17 // (37)
+        0.5 conc --> 17 // (57)
+        2.5 conc --> 8 // (68)
+        5.0 conc --> 6, 8, 13, 14, 20 // (86, 88, 93, 94, 100)
+        50 conc --> 
         
     """
 """
@@ -94,12 +103,15 @@ fish_nums = {
     50.0: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
 }
 
+bad_fish_ids = [5, 11, 12, 37, 57, 68, 86, 88, 93, 94, 100]
+
 thigmotaxic_distance = 0.0053
 
 csv_file_path = "/Users/aloyeoshotse/AJO/NAUMANN_LAB/DOI_behaviorAnalysis/csv_files"
 
 
 def run_all_metric_functions():
+    # TODO: rewrite to account for tracking only getting thigmotaxis
     behavior = ["photomotor", "startle", "thigmotaxis"]
     period = ["light", "dark", "vibration"]
     metric = ["max", "mean", "sum"]
@@ -113,6 +125,8 @@ def run_all_metric_functions():
                         if behavior[i] != "startle" and period[x] == "vibration":
                             pass
                         elif "speed" in csv_file and metric[y] == "sum":
+                            pass
+                        elif "tracking" in csv_file and behavior[i] != "thigmotaxis":
                             pass
                         elif "recovery" in csv_file:
                             pass
@@ -170,15 +184,19 @@ def process_file(file_name, behavior, period, metric="", specific=False):
 
 def extract_metadata(file_name):
     file_name = file_name.split("/")[-1]
-    info = [("metric", file_name.split("_")[1]), ("baseline", 1 if "baseline" in file_name else 0),
-            ("recovery", 1 if "recovery" in file_name else 0), ("dose", file_name.split("_")[-1][:-4])]
+    info = [("metric", file_name.split("_")[1] if "recovery" not in file_name else file_name.split("_")[2]),
+            ("baseline", 1 if "baseline" in file_name else 0), ("recovery", 1 if "recovery" in file_name else 0),
+            ("dose", file_name.split("_")[-1][:-4])]
     return info
 
 
 def retrieve_distance_csv(filename):
     filename = filename.split("/")[-1]
     lst = filename.split("_")
-    lst[1] = "distance"
+    if "recovery" not in lst:
+        lst[1] = "distance"
+    else:
+        lst[2] = "distance"
     distance_file_name = os.path.join(csv_file_path, "_".join(lst))
     return pd.read_csv(distance_file_name)
 
@@ -193,6 +211,7 @@ def populate_df_dictionary(metadata, metric_data, specific):
         metric_name = metric_data[0].split(";")
     else:
         metric_name = [metric_data[0]]
+
     values = metric_data[1]
     for fish_ids, fish_metrics in values:
         for x in range(len(fish_ids)):
@@ -215,11 +234,16 @@ def adjust_fish_id(original_fish_id, concentration):
 
 def update_data_file(dictionary, directory, file_name):
     global fish_nums
+    global bad_fish_ids
     file_path = os.path.join(directory, file_name)
     file_exists = os.path.isfile(file_path)
     dictionary["fish"] = adjust_fish_id(dictionary["fish"], dictionary["dose"])
     df = pd.DataFrame([dictionary])
     df['dose'] = df['dose'].astype(float)
+
+    if dictionary["recovery"] == 1:
+        if dictionary["fish"] in bad_fish_ids:
+            return
 
     if file_exists:
         existing_df = pd.read_csv(file_path)
@@ -352,6 +376,53 @@ def calculate_metric(filtered_data, metric):
         totals.append(max(filtered_data) if len(filtered_data) > 0 else 0)
     return totals
 
+
+def recovery_epoch_distance(df, light, metric, specific):
+    global epoch_time_ranges
+    distance_df = df.filter(regex='distance_traveled|time|stim_name')
+    stim_name = "light_epoch" if light == 1 else "dark_epoch"
+    fish_ids = [fish_id for fish_id, column in enumerate(distance_df) if "distance_traveled" in column]
+    metric_lst = []
+
+    for column in distance_df:
+        if "distance_traveled" in column:
+            totals = []
+            for start, end in epoch_time_ranges[light]:
+                filtered_time = distance_df.loc[distance_df['time'].between(start, end, inclusive='left')]
+                stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
+                totals.extend(calculate_metric(stim_filtered, metric))
+            if specific:
+                metric_lst.append(totals)
+            else:
+                aggregated_metric = max(totals) if metric == "max" else sum(totals) if metric == "sum" else sum(
+                    totals) / len(totals)
+                metric_lst.append([aggregated_metric])
+    return fish_ids, metric_lst
+
+
+# def epoch_speed(df, light, metric, specific):
+#     if metric == "sum":
+#         return "Sum is not a valid metric for speed. Input either mean or max."
+#
+#     global epoch_time_ranges
+#     speed_df = df.filter(regex='^(?!.*average).*speed|time|stim_name')
+#     stim_name = "light_epoch" if light == 1 else "dark_epoch"
+#     fish_ids = [fish_id for fish_id, column in enumerate(speed_df) if "speed" in column]
+#     metric_lst = []
+#
+#     for column in speed_df:
+#         if 'speed' in column:
+#             totals = []
+#             for start, end in epoch_time_ranges[light]:
+#                 filtered_time = speed_df.loc[speed_df['time'].between(start, end, inclusive='left')]
+#                 stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
+#                 totals.extend(calculate_metric(stim_filtered, metric))
+#             if specific:
+#                 metric_lst.append(totals)
+#             else:
+#                 aggregated_metric = max(totals) if metric == "max" else sum(totals) / len(totals)
+#                 metric_lst.append([aggregated_metric])
+#     return fish_ids, metric_lst
 
 def epoch_distance(df, light, metric, specific):
     global epoch_time_ranges
@@ -752,9 +823,9 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 
 
 if __name__ == '__main__':
-    # process_file("baseline_distance_0.05.csv", "photomotor", "dark", "sum", True)
+    # process_file("24hour_recovery_distance_0.05.csv", "startle", "dark", "sum", True)
     # process_file("baseline_speed_2.5.csv", "photomotor", "dark", "max", True)
     # process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
     # process_file("baseline_distance_0.05.csv", "startle", "vibration", "sum")
-    # process_file("baseline_tracking_50.csv", "thigmotaxis", "light", "mean", False)
-    run_all_metric_functions()
+    process_file("24hour_recovery_tracking_0.csv", "thigmotaxis", "light", "mean", False)
+    # run_all_metric_functions()
