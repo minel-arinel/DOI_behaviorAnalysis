@@ -223,7 +223,7 @@ def process_file(file_name, behavior, period, metric="", specific=False):
 
 
 def extract_metadata(file_name):
-    file_name = file_name.split("/")[-1]
+    file_name = file_name.split("/")[-1] if "/" in file_name else file_name.split("\\")[-1]
     info = [("metric", file_name.split("_")[1] if "recovery" not in file_name else file_name.split("_")[2]),
             ("baseline", 1 if "baseline" in file_name else 0), ("recovery", 1 if "recovery" in file_name else 0),
             ("dose", file_name.split("_")[-1][:-4])]
@@ -814,9 +814,4 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 
 
 if __name__ == '__main__':
-    process_file("24hour_recovery_distance_0.05.csv", "startle", "dark", "sum", True)
-    # process_file("baseline_speed_2.5.csv", "photomotor", "dark", "max", True)
-    # process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
-    # process_file("baseline_distance_0.05.csv", "startle", "vibration", "sum")
-    # process_file("24hour_recovery_tracking_0.csv", "thigmotaxis", "light", "mean", False)
-    # run_all_metric_functions()
+    run_all_metric_functions()
