@@ -311,7 +311,6 @@ def update_data_file(dictionary, file_name):
         combined_df.to_csv(file_path, index=False)
         return combined_df
 
-    print(file_path)
     df.to_csv(file_path, index=False)
     return df
 
