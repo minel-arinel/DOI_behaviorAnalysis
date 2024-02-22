@@ -25,18 +25,13 @@ COMPLETED:
             - figure out how to decide between photomotor, startle, and thigmotaxis
             - add a feature that determines fish id by column or row
     - Make a note that the mean is distance / frame (average per frame) 
-
-    24 HR RECOVERY
+    - 24 HR RECOVERY
         - Wells are A1-A6...D1-D6
             - each column gets a different concentration 
             - first experiment had no fish removed
-
-TODO LATER:
     - update the function "update_data_file" to filter removed fish for the
         24 hr recovery period (could also put it in populate_df_dictionary()" before
         the update_data_file function is called (line 212)
-    - add something to account for column and rows --> take 
-        
     - columns to skip / fish_id to remove:
         0.0 conc --> 5, 11, 12 // (5, 11, 12)
         .05 conc --> 17 // (37)
@@ -44,9 +39,58 @@ TODO LATER:
         2.5 conc --> 8 // (68)
         5.0 conc --> 6, 8, 13, 14, 20 // (86, 88, 93, 94, 100)
         50 conc --> 
-        
+
+TODO:
+    - add something to account for column and rows --> take
+    - get on the server
+    - download df to lab computers
+    - once df is ready, we need a checkpoint to confirm it
+        - write 1 function 
+        - dark epoch (each epoch) -->  total distance moved
+            - all concentrations
+            - baseline, drugtreated, and recovery 
+            - get average of all fish
     """
 """
+
+Volinanserin Notes:
+
+- remove recovery column
+- df for each separate experiment 
+
+- MCAM/20231024_NaumannLab_Volinanserin_Experiments
+    -  5 experiments
+    - Given by rows
+    - 4 concentrations
+    - 0 micrograms/mL
+    - 5
+    - 10
+    - 20
+    - test 4 concentration on 50 ug/mL DOI
+    - baseline, then add volinanserin, 20 min later add 50 ug/mL DOI, and 10 min later 
+    - The control (no volinanserin, and only DOI) of this should match the the DOI experiments at 50ug/mL
+    - Trying to see what concentration of volinanserin works best with 50ug/mL
+    
+- MCAM/20231128_NaumannLab_DOI_Volinanserin_Experiments
+    - 5 experiments 
+    - different concentrations of DOI (same as DOI experiments)
+    - all 20 ug/ML of volinanserin
+    - trying to see what concentration will the dosage of volinanserin remove the affect of DOI (how it interacrs with
+        the DOI)
+    - The volinanserin increased the activity in all DOI concentrations
+    - fish_id is the same
+    
+    
+- MCAM/20231201_NaumannLab_Volinanserin_Eggwater_Experiments
+    - 1 single experiment
+    - wanted to confirm what volinanserin by itself is doing
+    - 2 concentration of volinanserin
+        - 0 and 20
+    - volinanserin increases locomotion
+    - These are column based (3 columns will get the same concentration)
+    
+- RNA in situ hybridization --> takes a mRNA, create an opposite primer with a fluorescent tag
+    
 Notes
     1) 
         have a dictionary for the final df we want to make: --> make this using parallel lists that much up the fishes with their data
@@ -94,7 +138,7 @@ data_dict = {
     "dose": 0.0
 }
 
-fish_nums = {
+fish_nums_columns = {
     0.0: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     0.05: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
     0.5: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60],
@@ -107,17 +151,17 @@ bad_fish_ids = [5, 11, 12, 37, 57, 68, 86, 88, 93, 94, 100]
 
 thigmotaxic_distance = 0.0053
 
-csv_file_path = "/Users/aloyeoshotse/AJO/NAUMANN_LAB/DOI_behaviorAnalysis/csv_files"
+csv_file_path = "csv_files"
 
 
 def run_all_metric_functions():
-    # TODO: rewrite to account for tracking only getting thigmotaxis
     behavior = ["photomotor", "startle", "thigmotaxis"]
     period = ["light", "dark", "vibration"]
     metric = ["max", "mean", "sum"]
     specific = [True, False]
 
-    for csv_file in os.listdir("csv_files"):
+    for csv_file in os.listdir(csv_file_path):
+        print(csv_file)
         for i in range(len(behavior)):
             for x in range(len(period)):
                 for y in range(len(metric)):
@@ -128,10 +172,7 @@ def run_all_metric_functions():
                             pass
                         elif "tracking" in csv_file and behavior[i] != "thigmotaxis":
                             pass
-                        elif "recovery" in csv_file:
-                            pass
                         else:
-                            print([csv_file, behavior[i], period[x], metric[y], specific[j]])
                             process_file(csv_file, behavior[i], period[x], metric[y], specific[j])
 
 
@@ -177,7 +218,6 @@ def process_file(file_name, behavior, period, metric="", specific=False):
         print("Input either 'photomotor', 'startle', or 'thigmotaxis' for 'behavior'.")
         return
 
-    # print(data)
     for metric_data in data:
         populate_df_dictionary(metadata, metric_data, specific)
 
@@ -221,21 +261,20 @@ def populate_df_dictionary(metadata, metric_data, specific):
                 data_dict["y"] = round(fish_metrics[x][y], 8)
                 data_dict["drug"] = 0 if data_dict["baseline"] == 1 or data_dict["recovery"] == 1 or data_dict[
                     "dose"] == 0.0 else 1
-                update_data_file(data_dict, "/Users/aloyeoshotse/AJO/NAUMANN_LAB/DOI_behaviorAnalysis",
-                                 "MCAM_fish_metrics.csv")
+                update_data_file(data_dict, "MCAM_fish_metrics.csv")
 
 
 def adjust_fish_id(original_fish_id, concentration):
-    global fish_nums
+    global fish_nums_columns
     concentration = float(concentration)
     index = original_fish_id - 1
-    return fish_nums[concentration][index]
+    return fish_nums_columns[concentration][index]
 
 
-def update_data_file(dictionary, directory, file_name):
-    global fish_nums
+def update_data_file(dictionary, file_name):
+    global fish_nums_columns
     global bad_fish_ids
-    file_path = os.path.join(directory, file_name)
+    file_path = os.path.abspath(file_name)
     file_exists = os.path.isfile(file_path)
     dictionary["fish"] = adjust_fish_id(dictionary["fish"], dictionary["dose"])
     df = pd.DataFrame([dictionary])
@@ -272,6 +311,7 @@ def update_data_file(dictionary, directory, file_name):
         combined_df.to_csv(file_path, index=False)
         return combined_df
 
+    print(file_path)
     df.to_csv(file_path, index=False)
     return df
 
@@ -376,53 +416,6 @@ def calculate_metric(filtered_data, metric):
         totals.append(max(filtered_data) if len(filtered_data) > 0 else 0)
     return totals
 
-
-def recovery_epoch_distance(df, light, metric, specific):
-    global epoch_time_ranges
-    distance_df = df.filter(regex='distance_traveled|time|stim_name')
-    stim_name = "light_epoch" if light == 1 else "dark_epoch"
-    fish_ids = [fish_id for fish_id, column in enumerate(distance_df) if "distance_traveled" in column]
-    metric_lst = []
-
-    for column in distance_df:
-        if "distance_traveled" in column:
-            totals = []
-            for start, end in epoch_time_ranges[light]:
-                filtered_time = distance_df.loc[distance_df['time'].between(start, end, inclusive='left')]
-                stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
-                totals.extend(calculate_metric(stim_filtered, metric))
-            if specific:
-                metric_lst.append(totals)
-            else:
-                aggregated_metric = max(totals) if metric == "max" else sum(totals) if metric == "sum" else sum(
-                    totals) / len(totals)
-                metric_lst.append([aggregated_metric])
-    return fish_ids, metric_lst
-
-
-# def epoch_speed(df, light, metric, specific):
-#     if metric == "sum":
-#         return "Sum is not a valid metric for speed. Input either mean or max."
-#
-#     global epoch_time_ranges
-#     speed_df = df.filter(regex='^(?!.*average).*speed|time|stim_name')
-#     stim_name = "light_epoch" if light == 1 else "dark_epoch"
-#     fish_ids = [fish_id for fish_id, column in enumerate(speed_df) if "speed" in column]
-#     metric_lst = []
-#
-#     for column in speed_df:
-#         if 'speed' in column:
-#             totals = []
-#             for start, end in epoch_time_ranges[light]:
-#                 filtered_time = speed_df.loc[speed_df['time'].between(start, end, inclusive='left')]
-#                 stim_filtered = filtered_time[filtered_time['stim_name'] == stim_name][column]
-#                 totals.extend(calculate_metric(stim_filtered, metric))
-#             if specific:
-#                 metric_lst.append(totals)
-#             else:
-#                 aggregated_metric = max(totals) if metric == "max" else sum(totals) / len(totals)
-#                 metric_lst.append([aggregated_metric])
-#     return fish_ids, metric_lst
 
 def epoch_distance(df, light, metric, specific):
     global epoch_time_ranges
@@ -700,7 +693,6 @@ def epoch_mean_dist_thigmotaxis(df, light, specific):
 
 
 def percent_thig_time(df, light, specific):
-    # TODO: check this function
     global epoch_time_ranges
     global thigmotaxic_distance
     tracking_df = df.filter(regex='^(?!.*average).*dist_from_center|time|stim_name')
@@ -754,7 +746,6 @@ def epoch_time_of_thigmotaxis(df, light, specific):
 
 
 def percent_thig_distance(df, df2, light, specific):
-    # TODO: check this function
     global epoch_time_ranges
     global thigmotaxic_distance
     tracking_df = df.filter(regex='^(?!.*average).*dist_from_center|time|stim_name')
@@ -823,9 +814,9 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 
 
 if __name__ == '__main__':
-    # process_file("24hour_recovery_distance_0.05.csv", "startle", "dark", "sum", True)
+    process_file("24hour_recovery_distance_0.05.csv", "startle", "dark", "sum", True)
     # process_file("baseline_speed_2.5.csv", "photomotor", "dark", "max", True)
     # process_file("baseline_speed_0.csv", "startle", "dark", "mean", False)
     # process_file("baseline_distance_0.05.csv", "startle", "vibration", "sum")
-    process_file("24hour_recovery_tracking_0.csv", "thigmotaxis", "light", "mean", False)
+    # process_file("24hour_recovery_tracking_0.csv", "thigmotaxis", "light", "mean", False)
     # run_all_metric_functions()
