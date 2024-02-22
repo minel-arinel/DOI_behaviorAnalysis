@@ -91,7 +91,7 @@ Volinanserin Notes:
     
 - RNA in situ hybridization --> takes a mRNA, create an opposite primer with a fluorescent tag
     
-Notes
+Notes:
     1) 
         have a dictionary for the final df we want to make: --> make this using parallel lists that much up the fishes with their data
         column 1: y -> float, this should have the numeric value of what you calculated
