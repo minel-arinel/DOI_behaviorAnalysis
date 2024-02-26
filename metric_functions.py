@@ -93,7 +93,8 @@ Volinanserin Notes:
     
 Notes:
     1) 
-        have a dictionary for the final df we want to make: --> make this using parallel lists that much up the fishes with their data
+        have a dictionary for the final df we want to make: --> make this using parallel lists that much up the fishes with their 
+        data
         column 1: y -> float, this should have the numeric value of what you calculated
             column 2 (metadata): metric -> str, this should be a unique name for your individual metric (e.g., “sum_distance_dark_epoch_all”)
             column 3: fish -> int, a fish ID for each individual fish that you will calculate these for
