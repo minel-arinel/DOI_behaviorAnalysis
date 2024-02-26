@@ -147,7 +147,14 @@ fish_nums_columns = {
     50.0: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
 }
 
-bad_fish_ids = [5, 11, 12, 37, 57, 68, 86, 88, 93, 94, 100]
+recovery_fish_nums_columns = {
+    0.0: [1, 2, 3, 4, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20],
+    0.05: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40],
+    0.5: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58, 59, 60],
+    2.5: [61, 62, 63, 64, 65, 66, 67, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80],
+    5.0: [81, 82, 83, 84, 85, 87, 89, 90, 91, 92, 95, 96, 97, 98, 99],
+    50.0: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
+}
 
 thigmotaxic_distance = 0.0053
 
@@ -170,10 +177,11 @@ def run_all_metric_functions():
                             pass
                         elif "speed" in csv_file and metric[y] == "sum":
                             pass
-                        elif "tracking" in csv_file and behavior[i] != "thigmotaxis":
+                        elif behavior[i] == "thigmotaxis" and "tracking" not in csv_file:
                             pass
                         else:
                             process_file(csv_file, behavior[i], period[x], metric[y], specific[j])
+        print(csv_file + " - completed!")
 
 
 def process_file(file_name, behavior, period, metric="", specific=False):
@@ -230,15 +238,18 @@ def extract_metadata(file_name):
     return info
 
 
+def sort_df(df):
+    return df.sort_values(by=["dose", "metric", "fish"])
+
+
 def retrieve_distance_csv(filename):
-    filename = filename.split("/")[-1]
     lst = filename.split("_")
     if "recovery" not in lst:
         lst[1] = "distance"
     else:
         lst[2] = "distance"
-    distance_file_name = os.path.join(csv_file_path, "_".join(lst))
-    return pd.read_csv(distance_file_name)
+    distance_file_name = "_".join(lst) if ".csv" in lst[-1] else "_".join(lst) + ".csv"
+    return pd.read_csv(os.path.join(os.getcwd(), csv_file_path, distance_file_name))
 
 
 def populate_df_dictionary(metadata, metric_data, specific):
@@ -264,25 +275,25 @@ def populate_df_dictionary(metadata, metric_data, specific):
                 update_data_file(data_dict, "MCAM_fish_metrics.csv")
 
 
-def adjust_fish_id(original_fish_id, concentration):
+def adjust_fish_id(dictionary):
     global fish_nums_columns
-    concentration = float(concentration)
-    index = original_fish_id - 1
-    return fish_nums_columns[concentration][index]
+    global recovery_fish_nums_columns
+
+    concentration = float(dictionary["dose"])
+    index = dictionary["fish"] - 1
+    recovery = dictionary["recovery"]
+
+    return fish_nums_columns[concentration][index] if recovery != 1 else recovery_fish_nums_columns[concentration][index]
 
 
 def update_data_file(dictionary, file_name):
     global fish_nums_columns
-    global bad_fish_ids
+
     file_path = os.path.abspath(file_name)
     file_exists = os.path.isfile(file_path)
-    dictionary["fish"] = adjust_fish_id(dictionary["fish"], dictionary["dose"])
+    dictionary["fish"] = adjust_fish_id(dictionary)
     df = pd.DataFrame([dictionary])
     df['dose'] = df['dose'].astype(float)
-
-    if dictionary["recovery"] == 1:
-        if dictionary["fish"] in bad_fish_ids:
-            return
 
     if file_exists:
         existing_df = pd.read_csv(file_path)
@@ -307,11 +318,11 @@ def update_data_file(dictionary, file_name):
                     print(f"{df}\n")
                     return existing_df
 
-        combined_df = pd.concat([existing_df, df], ignore_index=True)
+        combined_df = sort_df(pd.concat([existing_df, df], ignore_index=True))
         combined_df.to_csv(file_path, index=False)
         return combined_df
 
-    print(file_path)
+    df = sort_df(df)
     df.to_csv(file_path, index=False)
     return df
 
