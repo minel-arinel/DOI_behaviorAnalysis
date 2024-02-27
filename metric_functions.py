@@ -50,6 +50,7 @@ TODO:
             - all concentrations
             - baseline, drugtreated, and recovery 
             - get average of all fish
+    - add function to handle duplicated row and to replace values (pandas.duplicated())
     """
 """
 
@@ -159,7 +160,7 @@ recovery_fish_nums_columns = {
 
 thigmotaxic_distance = 0.0053
 
-csv_file_path = "csv_files"
+csv_file_path = "csv_files/baseline"
 
 
 def run_all_metric_functions():
@@ -175,10 +176,13 @@ def run_all_metric_functions():
                 for y in range(len(metric)):
                     for j in range(len(specific)):
                         if behavior[i] != "startle" and period[x] == "vibration":
+                            # Startle are the only behavior that has vibration stimuli
                             pass
                         elif "speed" in csv_file and metric[y] == "sum":
+                            # We do not calculate sum of speed
                             pass
-                        elif behavior[i] == "thigmotaxis" and "tracking" not in csv_file:
+                        elif behavior[i] == "thigmotaxis" and "tracking" not in csv_file and metric[y] != "mean":
+                            # Only calculate thigmotaxis if it is a tracking file
                             pass
                         else:
                             process_file(csv_file, behavior[i], period[x], metric[y], specific[j])
@@ -187,7 +191,7 @@ def run_all_metric_functions():
 
 def process_file(file_name, behavior, period, metric="", specific=False):
     file_name = os.path.join(csv_file_path, file_name)
-    df = pd.read_csv(file_name, low_memory=False)
+    df = pd.read_csv(file_name)
     metadata = extract_metadata(file_name)
     tracking = metadata[0][1]  # will either be distance or speed
     data = []
@@ -239,10 +243,6 @@ def extract_metadata(file_name):
     return info
 
 
-def sort_df(df):
-    return df.sort_values(by=["dose", "metric", "fish"])
-
-
 def retrieve_distance_csv(filename):
     lst = filename.split("_")
     if "recovery" not in lst:
@@ -271,8 +271,7 @@ def populate_df_dictionary(metadata, metric_data, specific):
                 data_dict['metric'] = metric_name[y]
                 data_dict["fish"] = fish_ids[x]
                 data_dict["y"] = round(fish_metrics[x][y], 8)
-                data_dict["drug"] = 0 if data_dict["baseline"] == 1 or data_dict["recovery"] == 1 or data_dict[
-                    "dose"] == 0.0 else 1
+                data_dict["drug"] = 0 if data_dict["baseline"] == 1 or data_dict["recovery"] == 1 else 1
                 update_data_file(data_dict, "MCAM_fish_metrics.csv")
 
 
@@ -289,7 +288,7 @@ def adjust_fish_id(dictionary):
 
 def update_data_file(dictionary, file_name):
     global fish_nums_columns
-
+    file_name = os.path.join(csv_file_path, file_name)
     file_path = os.path.abspath(file_name)
     file_exists = os.path.isfile(file_path)
     dictionary["fish"] = adjust_fish_id(dictionary)
@@ -299,31 +298,30 @@ def update_data_file(dictionary, file_name):
     if file_exists:
         existing_df = pd.read_csv(file_path)
 
-        for index, row in existing_df.iterrows():
-            duplicate_data = []
-            single_row = pd.DataFrame([existing_df.iloc[index]])
-            different_y = False
-            for col in single_row.columns:
-                if df[col].iloc[0] == single_row[col].iloc[0]:
-                    duplicate_data.append(True)
-                else:
-                    if col == "y":
-                        different_y = True
-                    else:
-                        duplicate_data.append(False)
-            if all(duplicate_data):
-                if different_y:
-                    existing_df.loc[index:index, "y"] = df["y"].iloc[0]
-                else:
-                    print("The data in the following row already exists in the DataFrame.")
-                    print(f"{df}\n")
-                    return existing_df
+        # for index, row in existing_df.iterrows():
+        #     duplicate_data = []
+        #     single_row = pd.DataFrame([existing_df.iloc[index]])
+        #     different_y = False
+        #     for col in single_row.columns:
+        #         if df[col].iloc[0] == single_row[col].iloc[0]:
+        #             duplicate_data.append(True)
+        #         else:
+        #             if col == "y":
+        #                 different_y = True
+        #             else:
+        #                 duplicate_data.append(False)
+        #     if all(duplicate_data):
+        #         if different_y:
+        #             existing_df.loc[index:index, "y"] = df["y"].iloc[0]
+        #         else:
+        #             print("The data in the following row already exists in the DataFrame.")
+        #             print(f"{df}\n")
+        #             return existing_df
 
-        combined_df = sort_df(pd.concat([existing_df, df], ignore_index=True))
+        combined_df = pd.concat([existing_df, df], ignore_index=True)
         combined_df.to_csv(file_path, index=False)
         return combined_df
 
-    df = sort_df(df)
     df.to_csv(file_path, index=False)
     return df
 
