@@ -163,11 +163,13 @@ thigmotaxic_distance = 0.0053
 csv_file_path = "csv_files/baseline"
 
 
-def run_all_metric_functions():
+def run_all_metric_functions(path):
+    global csv_file_path
     behavior = ["photomotor", "startle", "thigmotaxis"]
     period = ["light", "dark", "vibration"]
     metric = ["max", "mean", "sum"]
     specific = [True, False]
+    csv_file_path = path
 
     for csv_file in os.listdir(csv_file_path):
         print(csv_file)
@@ -181,8 +183,11 @@ def run_all_metric_functions():
                         elif "speed" in csv_file and metric[y] == "sum":
                             # We do not calculate sum of speed
                             pass
-                        elif behavior[i] == "thigmotaxis" and "tracking" not in csv_file and metric[y] != "mean":
+                        elif behavior[i] != "thigmotaxis" and "tracking" in csv_file:
                             # Only calculate thigmotaxis if it is a tracking file
+                            pass
+                        elif behavior[i] == "thigmotaxis" and metric[y] != "mean":
+                            # Thigmotaxis functions should only run once
                             pass
                         else:
                             process_file(csv_file, behavior[i], period[x], metric[y], specific[j])
@@ -244,6 +249,7 @@ def extract_metadata(file_name):
 
 
 def retrieve_distance_csv(filename):
+    filename = filename.split("/")[-1] if "\\" not in filename else filename.split("\\")[-1]
     lst = filename.split("_")
     if "recovery" not in lst:
         lst[1] = "distance"
@@ -824,4 +830,6 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
 
 
 if __name__ == '__main__':
-    run_all_metric_functions()
+    csv_file_path_lst = ["csv_files/baseline", "csv_files/drugtreated", "csv_files/recovery"]
+    for path in csv_file_path_lst:
+        run_all_metric_functions(path)
