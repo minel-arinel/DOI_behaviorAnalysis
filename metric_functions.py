@@ -817,52 +817,6 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
     return fish_ids, metric_lst
 
 
-# def tot_dist_dark_epoch(filename):
-#     treatment_dict = {
-#         "baseline": [],
-#         "drugtreated": [],
-#         "24hour_recovery": []
-#     }
-#     """for each treatment, each DOI doses, and each epoch get the average total distance
-#         traveled in dark epochs."""
-#     df = pd.read_csv(filename)
-#     dark_distance_df = df[(df["metric"].str.startswith("sum_distance_dark_epoch_")) &
-#                           (~df["metric"].str.endswith("all"))]
-#     dose_lst = dark_distance_df["dose"].unique()
-#
-#     baseline_df = dark_distance_df[dark_distance_df["baseline"] == 1]
-#     drugtreated_df = dark_distance_df[dark_distance_df["drug"] == 1]
-#     recovery_df = dark_distance_df[dark_distance_df["recovery"] == 1]
-#
-#     for dose in dose_lst:
-#         baseline_dose_df = baseline_df[baseline_df["dose"] == dose]
-#         baseline_epoch1 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("1")]["y"]
-#         baseline_epoch2 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("2")]["y"]
-#         baseline_epoch3 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("3")]["y"]
-#
-#         drug_dose_df = drugtreated_df[drugtreated_df["dose"] == dose]
-#         drug_epoch1 = drug_dose_df[drug_dose_df["metric"].str.endswith("1")]["y"]
-#         drug_epoch2 = drug_dose_df[drug_dose_df["metric"].str.endswith("2")]["y"]
-#         drug_epoch3 = drug_dose_df[drug_dose_df["metric"].str.endswith("3")]["y"]
-#
-#         recovery_dose_df = recovery_df[recovery_df["dose"] == dose]
-#         recovery_epoch1 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("1")]["y"]
-#         recovery_epoch2 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("2")]["y"]
-#         recovery_epoch3 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("3")]["y"]
-#
-#         treatment_dict["baseline"].append((dose, [calculate_metric(baseline_epoch1, "mean")[0],
-#                                                   calculate_metric(baseline_epoch2, "mean")[0],
-#                                                   calculate_metric(baseline_epoch3, "mean")[0]]))
-#         treatment_dict["drugtreated"].append((dose, [calculate_metric(drug_epoch1, "mean")[0],
-#                                                      calculate_metric(drug_epoch2, "mean")[0],
-#                                                      calculate_metric(drug_epoch3, "mean")[0]]))
-#         treatment_dict["24hour_recovery"].append((dose, [calculate_metric(recovery_epoch1, "mean")[0],
-#                                                          calculate_metric(recovery_epoch2, "mean")[0],
-#                                                          calculate_metric(recovery_epoch3, "mean")[0]]))
-#
-#     return treatment_dict
-
-
 def combine_all_df():
     baseline_df = pd.read_csv("csv_files/baseline/MCAM_fish_metrics.csv")
     drug_df = pd.read_csv("csv_files/drugtreated/MCAM_fish_metrics.csv")
