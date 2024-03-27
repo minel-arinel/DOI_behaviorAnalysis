@@ -130,16 +130,6 @@ startle_time_ranges = {
     "vibration": [(1184, 1200), (2084, 2110)]
 }
 
-data_dict = {
-    "fish": 0,
-    "metric": "",
-    "y": 0.0,
-    "baseline": 0,
-    "recovery": 0,
-    "drug": 0,
-    "dose": 0.0
-}
-
 fish_nums_columns = {
     0.0: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     0.05: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
@@ -196,7 +186,7 @@ def run_all_metric_functions(path):
 
 def process_file(file_name, behavior, period, metric="", specific=False):
     file_name = os.path.join(csv_file_path, file_name)
-    df = pd.read_csv(file_name)
+    df = pd.read_csv(file_name, low_memory=False)
     metadata = extract_metadata(file_name)
     tracking = metadata[0][1]  # will either be distance or speed
     data = []
@@ -260,7 +250,16 @@ def retrieve_distance_csv(filename):
 
 
 def populate_df_dictionary(metadata, metric_data, specific):
-    global data_dict
+
+    data_dict = {
+        "fish": 0,
+        "metric": "",
+        "y": 0.0,
+        "baseline": 0,
+        "recovery": 0,
+        "drug": 0,
+        "dose": 0.0
+    }
 
     for col_name, value in metadata:
         data_dict[col_name] = value
@@ -270,6 +269,17 @@ def populate_df_dictionary(metadata, metric_data, specific):
     else:
         metric_name = [metric_data[0]]
 
+    if data_dict["baseline"] == 1:
+        data_dict["condition"] = "baseline"
+    elif data_dict["recovery"] == 1:
+        data_dict["condition"] = "recovery"
+    elif data_dict["baseline"] == 0 and data_dict["recovery"] == 0:
+        data_dict["condition"] = "drugtreated"
+
+    data_dict.pop('recovery')
+    data_dict.pop('baseline')
+    data_dict.pop('drug')
+
     values = metric_data[1]
     for fish_ids, fish_metrics in values:
         for x in range(len(fish_ids)):
@@ -277,7 +287,6 @@ def populate_df_dictionary(metadata, metric_data, specific):
                 data_dict['metric'] = metric_name[y]
                 data_dict["fish"] = fish_ids[x]
                 data_dict["y"] = round(fish_metrics[x][y], 8)
-                data_dict["drug"] = 0 if data_dict["baseline"] == 1 or data_dict["recovery"] == 1 else 1
                 update_data_file(data_dict, "MCAM_fish_metrics.csv")
 
 
@@ -287,9 +296,9 @@ def adjust_fish_id(dictionary):
 
     concentration = float(dictionary["dose"])
     index = dictionary["fish"] - 1
-    recovery = dictionary["recovery"]
+    condition = dictionary["condition"]
 
-    return fish_nums_columns[concentration][index] if recovery != 1 else recovery_fish_nums_columns[concentration][index]
+    return fish_nums_columns[concentration][index] if condition != "recovery" else recovery_fish_nums_columns[concentration][index]
 
 
 def update_data_file(dictionary, file_name):
@@ -303,27 +312,6 @@ def update_data_file(dictionary, file_name):
 
     if file_exists:
         existing_df = pd.read_csv(file_path)
-
-        # for index, row in existing_df.iterrows():
-        #     duplicate_data = []
-        #     single_row = pd.DataFrame([existing_df.iloc[index]])
-        #     different_y = False
-        #     for col in single_row.columns:
-        #         if df[col].iloc[0] == single_row[col].iloc[0]:
-        #             duplicate_data.append(True)
-        #         else:
-        #             if col == "y":
-        #                 different_y = True
-        #             else:
-        #                 duplicate_data.append(False)
-        #     if all(duplicate_data):
-        #         if different_y:
-        #             existing_df.loc[index:index, "y"] = df["y"].iloc[0]
-        #         else:
-        #             print("The data in the following row already exists in the DataFrame.")
-        #             print(f"{df}\n")
-        #             return existing_df
-
         combined_df = pd.concat([existing_df, df], ignore_index=True)
         combined_df.to_csv(file_path, index=False)
         return combined_df
@@ -829,7 +817,65 @@ def epoch_total_distance_thigmotaxis(df, df2, light, specific):
     return fish_ids, metric_lst
 
 
+# def tot_dist_dark_epoch(filename):
+#     treatment_dict = {
+#         "baseline": [],
+#         "drugtreated": [],
+#         "24hour_recovery": []
+#     }
+#     """for each treatment, each DOI doses, and each epoch get the average total distance
+#         traveled in dark epochs."""
+#     df = pd.read_csv(filename)
+#     dark_distance_df = df[(df["metric"].str.startswith("sum_distance_dark_epoch_")) &
+#                           (~df["metric"].str.endswith("all"))]
+#     dose_lst = dark_distance_df["dose"].unique()
+#
+#     baseline_df = dark_distance_df[dark_distance_df["baseline"] == 1]
+#     drugtreated_df = dark_distance_df[dark_distance_df["drug"] == 1]
+#     recovery_df = dark_distance_df[dark_distance_df["recovery"] == 1]
+#
+#     for dose in dose_lst:
+#         baseline_dose_df = baseline_df[baseline_df["dose"] == dose]
+#         baseline_epoch1 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("1")]["y"]
+#         baseline_epoch2 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("2")]["y"]
+#         baseline_epoch3 = baseline_dose_df[baseline_dose_df["metric"].str.endswith("3")]["y"]
+#
+#         drug_dose_df = drugtreated_df[drugtreated_df["dose"] == dose]
+#         drug_epoch1 = drug_dose_df[drug_dose_df["metric"].str.endswith("1")]["y"]
+#         drug_epoch2 = drug_dose_df[drug_dose_df["metric"].str.endswith("2")]["y"]
+#         drug_epoch3 = drug_dose_df[drug_dose_df["metric"].str.endswith("3")]["y"]
+#
+#         recovery_dose_df = recovery_df[recovery_df["dose"] == dose]
+#         recovery_epoch1 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("1")]["y"]
+#         recovery_epoch2 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("2")]["y"]
+#         recovery_epoch3 = recovery_dose_df[recovery_dose_df["metric"].str.endswith("3")]["y"]
+#
+#         treatment_dict["baseline"].append((dose, [calculate_metric(baseline_epoch1, "mean")[0],
+#                                                   calculate_metric(baseline_epoch2, "mean")[0],
+#                                                   calculate_metric(baseline_epoch3, "mean")[0]]))
+#         treatment_dict["drugtreated"].append((dose, [calculate_metric(drug_epoch1, "mean")[0],
+#                                                      calculate_metric(drug_epoch2, "mean")[0],
+#                                                      calculate_metric(drug_epoch3, "mean")[0]]))
+#         treatment_dict["24hour_recovery"].append((dose, [calculate_metric(recovery_epoch1, "mean")[0],
+#                                                          calculate_metric(recovery_epoch2, "mean")[0],
+#                                                          calculate_metric(recovery_epoch3, "mean")[0]]))
+#
+#     return treatment_dict
+
+
+def combine_all_df():
+    baseline_df = pd.read_csv("csv_files/baseline/MCAM_fish_metrics.csv")
+    drug_df = pd.read_csv("csv_files/drugtreated/MCAM_fish_metrics.csv")
+    recovery_df = pd.read_csv("csv_files/recovery/MCAM_fish_metrics.csv")
+    all_dfs = [baseline_df, drug_df, recovery_df]
+    final_df = pd.concat(all_dfs)
+    final_df.to_csv("MCAM_fish_metrics.csv", index=False)
+    return final_df
+
+
+
 if __name__ == '__main__':
     csv_file_path_lst = ["csv_files/baseline", "csv_files/drugtreated", "csv_files/recovery"]
     for path in csv_file_path_lst:
         run_all_metric_functions(path)
+    combine_all_df()
